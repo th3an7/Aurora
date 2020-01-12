@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,22 +8,21 @@ namespace Aurora.Profiles.Spotify.GSI.Nodes
 {
     public class ColorsNode : Node<ColorsNode>
     {
+        public ColorNode Desaturated;
+        public ColorNode LightVibrant;
+        public ColorNode Prominent;
+        public ColorNode Vibrant;
+        public ColorNode VibrantNotAlarming;
 
-        public string Desaturated = String.Empty;
-        public string LightVibrant = String.Empty;
-        public string Prominent = String.Empty;
-        public string Vibrant = String.Empty;
-        public string VibrantNotAlarming = String.Empty;
 
-
-        internal ColorsNode() : base() { }
-        internal ColorsNode(string json) : base(json)
+        public ColorsNode(string json) : base(json)
         {
-            Desaturated = GetString("desaturated");
-            LightVibrant = GetString("light_vibrant");
-            Prominent = GetString("prominent");
-            Vibrant = GetString("vibrant");
-            VibrantNotAlarming = GetString("vibrant_not_alarming");
+            Desaturated = new ColorNode(_ParsedData["desaturated"]?.ToString() ?? "");
+            LightVibrant = new ColorNode(_ParsedData["light_vibrant"]?.ToString() ?? "");
+            Prominent = new ColorNode(_ParsedData["prominent"]?.ToString() ?? "");
+            Vibrant = new ColorNode(_ParsedData["vibrant"]?.ToString() ?? "");
+            VibrantNotAlarming = new ColorNode(_ParsedData["vibrant_not_alarming"]?.ToString() ?? "");
+
         }
     }
 }
