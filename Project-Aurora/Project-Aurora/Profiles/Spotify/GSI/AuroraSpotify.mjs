@@ -104,7 +104,11 @@ class AuroraSpotify {
                 self.json.colors.color_5.b = (paletteColorArray[4][2]) / 255 || 0;
             });
 
-            this.sendJsonToAurora(this.json);
+            if(JSON.stringify(this.json) !== this.lastJson){
+				console.log("Sending states...");
+				this.lastJson = JSON.stringify(this.json);
+				this.sendJsonToAurora(this.json);
+			}
 
         }, 1000);
     }
