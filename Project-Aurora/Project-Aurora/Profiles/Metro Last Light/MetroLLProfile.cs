@@ -2,18 +2,23 @@
 using Aurora.Settings.Layers;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Runtime.Serialization;
 
 namespace Aurora.Profiles.Metro_Last_Light
 {
     public class MetroLLProfile : ApplicationProfile
     {
-        //Effects
-        //// Lighting Areas
-        public List<ColorZone> lighting_areas { get; set; }
-
         public MetroLLProfile() : base()
         {
             
+        }
+
+        [OnDeserialized]
+        void OnDeserialized(StreamingContext context)
+        {
+            if (!Layers.Any(lyr => lyr.Handler.GetType().Equals(typeof(Aurora.Settings.Layers.WrapperLightsLayerHandler))))
+                Layers.Add(new Layer("Wrapper Lighting", new Aurora.Settings.Layers.WrapperLightsLayerHandler()));
         }
 
         public override void Reset()
@@ -46,13 +51,9 @@ namespace Aurora.Profiles.Metro_Last_Light
                         _PrimaryColor = Color.Blue,
                         _Sequence = new KeySequence(new Devices.DeviceKeys[] { Devices.DeviceKeys.G, Devices.DeviceKeys.T, Devices.DeviceKeys.F, Devices.DeviceKeys.M, Devices.DeviceKeys.Q, Devices.DeviceKeys.N })
                     }
-                }
-                )
+                }),
+                new Layer("Wrapper Lighting", new Aurora.Settings.Layers.WrapperLightsLayerHandler()),
             };
-
-            //Effects
-            //// Lighting Areas
-            lighting_areas = new List<ColorZone>();
         }
     }
 }

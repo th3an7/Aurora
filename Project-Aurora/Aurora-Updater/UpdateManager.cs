@@ -9,6 +9,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
 using System.Text;
+using Octokit;
+using SemVer;
+using Version = SemVer.Version;
 
 namespace Aurora_Updater
 {
@@ -63,7 +66,7 @@ namespace Aurora_Updater
     {
         private string infoUrl = @"http://project-aurora.com/vcheck.php";
         private string[] ignoreFiles = { };
-        public UpdateResponse response = new UpdateResponse();
+        //public UpdateResponse response = new UpdateResponse();
         private Queue<LogEntry> log = new Queue<LogEntry>();
         private float downloadProgess = 0.0f;
         private float extractProgess = 0.0f;
@@ -71,12 +74,14 @@ namespace Aurora_Updater
         private int downloadProgressCheck = 0;
         private int secondsLeft = 15;
         private Aurora.Settings.Configuration Config;
+        private GitHubClient gClient = new GitHubClient(new ProductHeaderValue("aurora-updater"));
+        public Release LatestRelease;
 
-        public UpdateManager()
+        public UpdateManager(Version version)
         {
             LoadSettings();
             PerformCleanup();
-            FetchData();
+            FetchData(version);
         }
 
         public void LoadSettings()
@@ -106,22 +111,18 @@ namespace Aurora_Updater
             return (int)((downloadProgess + extractProgess) / 2.0f * 100.0f);
         }
 
-        private bool FetchData()
+        private bool FetchData(Version version)
         {
-            string sinfoUrl = infoUrl;
 
-            if (Config.GetDevReleases)
-                sinfoUrl += "?prerelease=1";
+            
 
-            if (String.IsNullOrWhiteSpace(sinfoUrl))
-                return false;
 
             try
             {
-                WebClient client = new WebClient();
-                string reply = client.DownloadString(sinfoUrl);
-
-                response = new UpdateResponse(reply);
+                if (Config.GetDevReleases || !String.IsNullOrWhiteSpace(version.PreRelease))
+                    LatestRelease = gClient.Repository.Release.GetAll("antonpup", "Aurora", new ApiOptions { PageCount = 1, PageSize = 1 }).Result[0];
+                else
+                    LatestRelease = gClient.Repository.Release.GetLatest("antonpup", "Aurora").Result;
 
                 //Console.WriteLine(reply);
             }
@@ -136,10 +137,12 @@ namespace Aurora_Updater
 
         public bool RetrieveUpdate(UpdateType type)
         {
-            string url = @"http://project-aurora.com/download.php?id=" + (type == UpdateType.Major ? response.Major.ID : response.Minor.ID);
-            updateState = UpdateStatus.InProgress;
+            //string url = @"http://project-aurora.com/download.php?id=" + (type == UpdateType.Major ? response.Major.ID : response.Minor.ID);
+            //updateState = UpdateStatus.InProgress;
             try
             {
+                string url = LatestRelease.Assets.First(s => s.Name.StartsWith("release") || s.Name.StartsWith("Aurora-v")).BrowserDownloadUrl;
+                
                 if (!String.IsNullOrWhiteSpace(url))
                 {
                     this.log.Enqueue(new LogEntry("Starting download... "));
@@ -489,145 +492,6 @@ namespace Aurora_Updater
         }
     }
 
-    public class UpdateVersion
-    {
-        //0.6.0b
-        //FinalVersion.MajorVersion.MinorVersion{AdditionalVersionModifier}
-        public int FinalVersion = 0;
-        public int MajorVersion = 0;
-        public int MinorVersion = 0;
-        public string AdditionalVersionModifier = "";
-
-        public UpdateVersion(string version)
-        {
-            int _final = 0;
-            int _major = 0;
-            int _minor = 0;
-
-            var verSplit = version.Split('.');
-
-            if (verSplit.Count() == 3)
-            {
-                if (int.TryParse(verSplit[0], out _final))
-                    FinalVersion = _final;
-
-                if (int.TryParse(verSplit[1], out _major))
-                    MajorVersion = _major;
-
-                if (int.TryParse(verSplit[2], out _minor))
-                    MinorVersion = _minor;
-                else
-                {
-                    StringBuilder sbMinor = new StringBuilder();
-                    StringBuilder sbAdditional = new StringBuilder();
-                    bool _readingMinor = true;
-
-                    foreach (char c in verSplit[2])
-                    {
-                        switch (c)
-                        {
-                            case '0':
-                            case '1':
-                            case '2':
-                            case '3':
-                            case '4':
-                            case '5':
-                            case '6':
-                            case '7':
-                            case '8':
-                            case '9':
-                                if (_readingMinor)
-                                    sbMinor.Append(c);
-                                else
-                                    sbAdditional.Append(c);
-                                break;
-                            default:
-                                _readingMinor = false;
-                                sbAdditional.Append(c);
-                                break;
-                        }
-
-                    }
-
-                    if (int.TryParse(sbMinor.ToString(), out _minor))
-                        MinorVersion = _minor;
-
-                    AdditionalVersionModifier = sbAdditional.ToString();
-                }
-            }
-        }
-
-        public static bool operator ==(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            if (lhs.FinalVersion == rhs.FinalVersion ||
-                lhs.MajorVersion == rhs.MajorVersion ||
-                lhs.MinorVersion == rhs.MinorVersion ||
-                String.Compare(lhs.AdditionalVersionModifier, rhs.AdditionalVersionModifier) == 0
-                )
-                return true;
-
-            return false;
-        }
-
-        public static bool operator !=(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            return !(lhs == rhs);
-        }
-
-        public static bool operator <(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            if (lhs.FinalVersion < rhs.FinalVersion ||
-                lhs.MajorVersion < rhs.MajorVersion ||
-                lhs.MinorVersion < rhs.MinorVersion ||
-                String.Compare(lhs.AdditionalVersionModifier, rhs.AdditionalVersionModifier) < 0
-                )
-                return true;
-
-            return false;
-        }
-
-        public static bool operator >(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            if (lhs.FinalVersion > rhs.FinalVersion ||
-                lhs.MajorVersion > rhs.MajorVersion ||
-                lhs.MinorVersion > rhs.MinorVersion ||
-                String.Compare(lhs.AdditionalVersionModifier, rhs.AdditionalVersionModifier) > 0
-                )
-                return true;
-
-            return false;
-        }
-
-        public static bool operator <=(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            if (lhs.FinalVersion <= rhs.FinalVersion &&
-                lhs.MajorVersion <= rhs.MajorVersion &&
-                lhs.MinorVersion <= rhs.MinorVersion &&
-                String.Compare(lhs.AdditionalVersionModifier, rhs.AdditionalVersionModifier) <= 0
-                )
-                return true;
-
-            return false;
-        }
-
-        public static bool operator >=(UpdateVersion lhs, UpdateVersion rhs)
-        {
-            if (lhs.FinalVersion >= rhs.FinalVersion &&
-                lhs.MajorVersion >= rhs.MajorVersion &&
-                lhs.MinorVersion >= rhs.MinorVersion &&
-                String.Compare(lhs.AdditionalVersionModifier, rhs.AdditionalVersionModifier) >= 0
-                )
-                return true;
-
-            return false;
-        }
-
-        public override string ToString()
-        {
-            return $"{FinalVersion}.{MajorVersion}.{MinorVersion}{AdditionalVersionModifier}";
-        }
-    }
-
     public enum UpdateType
     {
         Undefined,
@@ -638,7 +502,7 @@ namespace Aurora_Updater
     public class UpdateInfoNode : Node
     {
         public readonly int ID;
-        public readonly UpdateVersion Version;
+        public readonly Version Version;
         public readonly string Title;
         public readonly string Description;
         public readonly string Changelog;
@@ -651,7 +515,7 @@ namespace Aurora_Updater
             : base(JSON)
         {
             ID = GetInt("id");
-            Version = new UpdateVersion(GetString("vnr"));
+            Version = new Version(GetString("vnr"), true);
             Title = GetString("title");
             Description = GetString("desc").Replace("\\r\\n", "\r\n");
             Changelog = GetString("clog").Replace("\\r\\n", "\r\n");

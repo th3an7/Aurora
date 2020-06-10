@@ -48,11 +48,6 @@ namespace Aurora.Profiles.Dota_2.Layers
 
     public class Dota2AbilityLayerHandler : LayerHandler<Dota2AbilityLayerHandlerProperties>
     {
-        public Dota2AbilityLayerHandler() : base()
-        {
-            _ID = "Dota2Abilities";
-        }
-
         protected override UserControl CreateControl()
         {
             return new Control_Dota2AbilityLayer(this);
@@ -71,6 +66,9 @@ namespace Aurora.Profiles.Dota_2.Layers
                     for (int index = 0; index < dota2state.Abilities.Count; index++)
                     {
                         Ability ability = dota2state.Abilities[index];
+                        if (ability.Name.Contains("seasonal") || ability.Name.Contains("high_five"))
+                            continue;  
+                        
                         Devices.DeviceKeys key = Properties.AbilityKeys[index];
 
                         if (ability.IsUltimate)

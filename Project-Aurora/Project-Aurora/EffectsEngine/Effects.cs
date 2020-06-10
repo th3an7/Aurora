@@ -132,7 +132,7 @@ namespace Aurora
         int pushedframes = 0;
         Timer fpsDebugTimer = new Timer(1000D);
 
-        private static Devices.DeviceKeys[] possible_peripheral_keys = {
+        public static Devices.DeviceKeys[] possible_peripheral_keys = {
                     Devices.DeviceKeys.Peripheral,
                     Devices.DeviceKeys.Peripheral_FrontLight,
                     Devices.DeviceKeys.Peripheral_ScrollWheel,
@@ -193,6 +193,11 @@ namespace Aurora
                 return Effects.canvas_width > Effects.canvas_height ? Effects.canvas_width : Effects.canvas_height;
             }
         }
+
+        /// <summary>
+        /// Creates a new FreeFormObject that perfectly occupies the entire canvas.
+        /// </summary>
+        public static Aurora.Settings.FreeFormObject WholeCanvasFreeForm => new Settings.FreeFormObject(-grid_baseline_x, -grid_baseline_y, grid_width, grid_height);
 
         private static Dictionary<Devices.DeviceKeys, BitmapRectangle> bitmap_map = new Dictionary<Devices.DeviceKeys, BitmapRectangle>();
 
@@ -303,12 +308,13 @@ namespace Aurora
                         peripehralColors.Add(key, background.Get(key));
                 }
 
+                background.Fill(Color.FromArgb((int)(255.0f * (1.0f - Global.Configuration.KeyboardBrightness)), Color.Black));
+
                 foreach (Devices.DeviceKeys key in possible_peripheral_keys)
                     background.Set(key, Utils.ColorUtils.BlendColors(peripehralColors[key], Color.Black, (1.0f - Global.Configuration.PeripheralBrightness)));
 
-                background.Fill(Color.FromArgb((int)(255.0f * (1.0f - Global.Configuration.KeyboardBrightness)), Color.Black));
 
-                if (Global.Configuration.use_volume_as_brightness)
+                //if (Global.Configuration.UseVolumeAsBrightness)
                     background *= Global.Configuration.GlobalBrightness;
 
                 if (_forcedFrame != null)

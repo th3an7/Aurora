@@ -18,17 +18,20 @@ using System.IO;
 using Aurora.Settings.Keycaps;
 using Aurora.Profiles;
 using Aurora.Settings.Layers;
+using Aurora.Profiles.Aurora_Wrapper;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using PropertyChanged;
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace Aurora
 {
-    partial class ConfigUI : Window
+    [DoNotNotify]
+    partial class ConfigUI : Window, INotifyPropertyChanged
     {
-        Settings.Control_Settings settings_control = new Settings.Control_Settings();
-        //Profiles.Desktop.Control_Desktop desktop_control = new Profiles.Desktop.Control_Desktop();
-
-        Control_LayerControlPresenter layercontrol_presenter = new Control_LayerControlPresenter();
-        Control_ProfileControlPresenter profilecontrol_presenter = new Control_ProfileControlPresenter();
+        Control_Settings settingsControl = new Control_Settings();
+        Control_LayerControlPresenter layerPresenter = new Control_LayerControlPresenter();
+        Control_ProfileControlPresenter profilePresenter = new Control_ProfileControlPresenter();
 
         EffectColor desktop_color_scheme = new EffectColor(0, 0, 0);
 
@@ -63,7 +66,6 @@ namespace Aurora
             set
             {
                 SetValue(FocusedApplicationProperty, value);
-
                 Global.LightingStateManager.PreviewProfileKey = value != null ? value.Config.ID : string.Empty;
             }
         }
@@ -94,20 +96,17 @@ namespace Aurora
 
             Global.kbLayout.KeyboardLayoutUpdated += KbLayout_KeyboardLayoutUpdated;
 
-            ctrlLayerManager.NewLayer += Layer_manager_NewLayer;
-            ctrlLayerManager.ProfileOverviewRequest += CtrlLayerManager_ProfileOverviewRequest;
-
             ctrlProfileManager.ProfileSelected += CtrlProfileManager_ProfileSelected;
 
             GenerateProfileStack();
-            settings_control.DataContext = this;
+            settingsControl.DataContext = this;
 
             
         }
 
         internal void Display()
         {
-            if (Program.isSilent || Global.Configuration.start_silently)
+            if (App.isSilent || Global.Configuration.start_silently)
             {
                 this.Visibility = Visibility.Hidden;
                 this.WindowStyle = WindowStyle.None;
@@ -122,23 +121,24 @@ namespace Aurora
 
         private void CtrlProfileManager_ProfileSelected(ApplicationProfile profile)
         {
-            profilecontrol_presenter.Profile = profile;
+            profilePresenter.Profile = profile;
 
             if (_selectedManager.Equals(this.ctrlProfileManager))
-                this.content_grid.Content = profilecontrol_presenter;   
+                SelectedControl = profilePresenter;   
         }
 
         private void CtrlLayerManager_ProfileOverviewRequest(UserControl profile_control)
         {
-            if (this.content_grid.Content != profile_control)
-                this.content_grid.Content = profile_control;
+            if (SelectedControl != profile_control)
+                SelectedControl = profile_control;
         }
 
         private void Layer_manager_NewLayer(Layer layer)
         {
-            layercontrol_presenter.Layer = layer;
+            layerPresenter.Layer = layer;
 
-            this.content_grid.Content = layercontrol_presenter;
+            if (_selectedManager.Equals(this.ctrlLayerManager))
+                SelectedControl = layerPresenter;
         }
 
         private void KbLayout_KeyboardLayoutUpdated(object sender)
@@ -204,8 +204,14 @@ namespace Aurora
 
             this.UpdateLayout();
 
-
-            this.ProfileImage_MouseDown(this.profiles_stack.Children[0], null);
+            foreach (Image child in this.profiles_stack.Children)
+            {
+                if (child.Visibility == Visibility.Visible)
+                {
+                    this.ProfileImage_MouseDown(child, null);
+                    break;
+                }
+            }
         }
 
         public static bool ApplicationIsActivated()
@@ -314,12 +320,14 @@ namespace Aurora
         private void exitApp()
         {
             trayicon.Visibility = Visibility.Hidden;
-            virtual_keyboard_timer.Stop();
-            Program.Exit();
+            virtual_keyboard_timer?.Stop();
+            System.Windows.Application.Current.Shutdown();
         }
 
         private void minimizeApp()
         {
+            this.FocusedApplication?.SaveAll();
+
             if (!shownHiddenMessage)
             {
                 trayicon.ShowBalloonTip("Aurora", "This program is now hidden in the tray.", BalloonIcon.None);
@@ -354,7 +362,7 @@ namespace Aurora
 
         private BitmapImage _visible = new BitmapImage(new Uri(@"Resources/Visible.png", UriKind.Relative));
         private BitmapImage _not_visible = new BitmapImage(new Uri(@"Resources/Not Visible.png", UriKind.Relative));
-
+        
         private void GenerateProfileStack(string focusedKey = null)
         {
             selected_item = null;
@@ -376,18 +384,18 @@ namespace Aurora
                 if (!Global.LightingStateManager.Events.ContainsKey(profile_k))
                     continue;
 
-                Profiles.Application profile = (Profiles.Application)Global.LightingStateManager.Events[profile_k];
-                ImageSource icon = profile.GetIcon();
-                UserControl control = profile.GetUserControl();
+                Profiles.Application application = (Profiles.Application)Global.LightingStateManager.Events[profile_k];
+                ImageSource icon = application.Icon;
+                UserControl control = application.Control;
                 if (icon != null && control != null)
                 {
                     Image profile_image;
-                    if (profile is GenericApplication)
+                    if (application is GenericApplication)
                     {
-                        GenericApplicationProfile settings = (profile.Profile as GenericApplicationProfile);
+                        GenericApplicationSettings settings = (application.Settings as GenericApplicationSettings);
                         profile_image = new Image
                         {
-                            Tag = profile,
+                            Tag = application,
                             Source = icon,
                             ToolTip = settings.ApplicationName + " Settings",
                             Margin = new Thickness(0, 5, 0, 0)
@@ -424,22 +432,21 @@ namespace Aurora
                     }
                     else
                     {
-
                         profile_image = new Image
                         {
-                            Tag = profile,
+                            Tag = application,
                             Source = icon,
-                            ToolTip = profile.Config.Name + " Settings",
+                            ToolTip = application.Config.Name + " Settings",
                             Margin = new Thickness(0, 5, 0, 0),
-                            Visibility = profile.Settings.Hidden ? Visibility.Collapsed : Visibility.Visible
+                            Visibility = application.Settings.Hidden ? Visibility.Collapsed : Visibility.Visible
                         };
                         profile_image.MouseDown += ProfileImage_MouseDown;
                         this.profiles_stack.Children.Add(profile_image);
                     }
 
-                    if (profile.Config.ID.Equals(focusedKey))
+                    if (application.Config.ID.Equals(focusedKey))
                     {
-                        this.FocusedApplication = profile;
+                        this.FocusedApplication = application;
                         this.TransitionToProfile(profile_image);
                     }
                 }
@@ -552,6 +559,7 @@ namespace Aurora
 
         private void TransitionToProfile(Image source)
         {
+            this.FocusedApplication = source.Tag as Profiles.Application;
             var bitmap = (BitmapSource)source.Source;
             var color = Utils.ColorUtils.GetAverageColor(bitmap);
 
@@ -569,11 +577,7 @@ namespace Aurora
             if (image != null && image.Tag != null && image.Tag is Profiles.Application)
             {
                 if (e == null || e.LeftButton == MouseButtonState.Pressed)
-                {
-                    this.FocusedApplication = image.Tag as Profiles.Application;
                     this.TransitionToProfile(image);
-                    
-                }
                 else if (e.RightButton == MouseButtonState.Pressed)
                 {
                     this.cmenuProfiles.PlacementTarget = (Image)sender;
@@ -600,8 +604,8 @@ namespace Aurora
             th.content_grid.MinHeight = ((UserControl)element).MinHeight;
             th.content_grid.Children.Add(element);
             th.content_grid.UpdateLayout();*/
-            th.content_grid.Content = value.GetUserControl();
-            th.content_grid.UpdateLayout();
+            th.SelectedControl = value.Control;
+            //th.content_grid.UpdateLayout();
 
         }
 
@@ -613,11 +617,16 @@ namespace Aurora
 
                 if (Global.LightingStateManager.Events.ContainsKey(name))
                 {
-                    if (MessageBox.Show("Are you sure you want to delete profile for " + (((Profiles.Application)Global.LightingStateManager.Events[name]).Profile as GenericApplicationProfile).ApplicationName + "?", "Remove Profile", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    if (MessageBox.Show("Are you sure you want to delete profile for " + (((Profiles.Application)Global.LightingStateManager.Events[name]).Settings as GenericApplicationSettings).ApplicationName + "?", "Remove Profile", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {
+                        var eventList = Global.Configuration.ProfileOrder
+                            .ToDictionary(x => x, x => Global.LightingStateManager.Events[x])
+                            .Where(x => ShowHidden || !(x.Value as Profiles.Application).Settings.Hidden)
+                            .ToList();
+                        var idx = Math.Max(eventList.FindIndex(x => x.Key == name), 0);
                         Global.LightingStateManager.RemoveGenericProfile(name);
                         //ConfigManager.Save(Global.Configuration);
-                        this.GenerateProfileStack();
+                        this.GenerateProfileStack(eventList[idx].Key);
                     }
                 }
             }
@@ -625,53 +634,57 @@ namespace Aurora
 
         private void AddProfile_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog exe_filedlg = new Microsoft.Win32.OpenFileDialog();
 
-            exe_filedlg.DefaultExt = ".exe";
-            exe_filedlg.Filter = "Executable Files (*.exe)|*.exe;";
+            Window_ProcessSelection dialog = new Window_ProcessSelection { CheckCustomPathExists = true, ButtonLabel = "Add Profile", Title ="Add Profile" };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ChosenExecutablePath)) { // do not need to check if dialog is already in excluded_programs since it is a Set and only contains unique items by definition
 
-            Nullable<bool> result = exe_filedlg.ShowDialog();
-
-            if (result.HasValue && result == true)
-            {
-                string filename = System.IO.Path.GetFileName(exe_filedlg.FileName.ToLowerInvariant());
+                string filename = Path.GetFileName(dialog.ChosenExecutablePath.ToLowerInvariant());
 
                 if (Global.LightingStateManager.Events.ContainsKey(filename))
                 {
-                    MessageBox.Show("Profile for this application already exists.");
-                }
-                else
-                {
-                    GenericApplication gen_app_pm = new GenericApplication(filename);
-
-                    System.Drawing.Icon ico = System.Drawing.Icon.ExtractAssociatedIcon(exe_filedlg.FileName.ToLowerInvariant());
-
-                    if (!System.IO.Directory.Exists(gen_app_pm.GetProfileFolderPath()))
-                        System.IO.Directory.CreateDirectory(gen_app_pm.GetProfileFolderPath());
-
-                    using (var icon_asbitmap = ico.ToBitmap())
+                    if (Global.LightingStateManager.Events[filename] is GameEvent_Aurora_Wrapper)
+                        Global.LightingStateManager.Events.Remove(filename);
+                    else
                     {
-                        icon_asbitmap.Save(Path.Combine(gen_app_pm.GetProfileFolderPath(), "icon.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        MessageBox.Show("Profile for this application already exists.");
+                        return;
                     }
-                    ico.Dispose();
-
-                    Global.LightingStateManager.RegisterEvent(gen_app_pm);
-                    ConfigManager.Save(Global.Configuration);
-                    GenerateProfileStack(filename);
                 }
+
+                GenericApplication gen_app_pm = new GenericApplication(filename);
+                gen_app_pm.Initialize();
+                ((GenericApplicationSettings)gen_app_pm.Settings).ApplicationName = Path.GetFileNameWithoutExtension(filename);
+
+                System.Drawing.Icon ico = System.Drawing.Icon.ExtractAssociatedIcon(dialog.ChosenExecutablePath.ToLowerInvariant());
+
+                if (!Directory.Exists(gen_app_pm.GetProfileFolderPath()))
+                    Directory.CreateDirectory(gen_app_pm.GetProfileFolderPath());
+
+                using (var icon_asbitmap = ico.ToBitmap())
+                {
+                    icon_asbitmap.Save(Path.Combine(gen_app_pm.GetProfileFolderPath(), "icon.png"), System.Drawing.Imaging.ImageFormat.Png);
+                }
+                ico.Dispose();
+
+                Global.LightingStateManager.RegisterEvent(gen_app_pm);
+                ConfigManager.Save(Global.Configuration);
+                GenerateProfileStack(filename);
             }
         }
 
-        private void DesktopControl_MouseDown(object sender, MouseButtonEventArgs e)
+        private void DesktopControl_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.FocusedApplication = null;
-            this.content_grid.Content = settings_control;
+            SelectedControl = settingsControl;
 
             current_color = desktop_color_scheme;
             transitionamount = 0.0f;
 
             UpdateProfileStackBackground(sender as FrameworkElement);
         }
+        private void cmbtnOpenBitmapWindow_Clicked(object sender, RoutedEventArgs e) => Window_BitmapView.Open();
+        private void cmbtnOpenHttpDebugWindow_Clicked(object sender, RoutedEventArgs e) =>Window_GSIHttpDebug.Open();
+
 
         private void UpdateProfileStackBackground(FrameworkElement item)
         {
@@ -741,8 +754,13 @@ namespace Aurora
 
         public void ShowWindow()
         {
+            Global.logger.Info("Show Window called");
+            this.Visibility = Visibility.Visible;
             this.WindowStyle = WindowStyle.SingleBorderWindow;
+            this.ShowInTaskbar = true;
+            //this.Topmost = true;
             this.Show();
+            this.Activate();
         }
 
         private void trayicon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
@@ -783,21 +801,79 @@ namespace Aurora
 
         private void ctrlLayerManager_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            this.content_grid.Content = this.FocusedApplication.Profile.Layers.Count > 0 ? layercontrol_presenter : this.FocusedApplication.GetUserControl();
+            if (!sender.Equals(_selectedManager))
+                SelectedControl = this.FocusedApplication.Profile.Layers.Count > 0 ? layerPresenter : this.FocusedApplication.Control;
+            UpdateManagerStackFocus(sender);
+        }
+
+        private void ctrlOverlayLayerManager_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            if (!sender.Equals(_selectedManager))
+                SelectedControl = this.FocusedApplication.Profile.OverlayLayers.Count > 0 ? layerPresenter : this.FocusedApplication.Control;
             UpdateManagerStackFocus(sender);
         }
 
         private void ctrlProfileManager_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            this.content_grid.Content = profilecontrol_presenter;
+            if (!sender.Equals(_selectedManager))
+                SelectedControl = profilePresenter;
             UpdateManagerStackFocus(sender);
         }
 
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void brdOverview_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+            this._selectedManager = SelectedControl = this.FocusedApplication.Control;
+
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e) {
             UpdateManagerStackFocus(_selectedManager, true);
         }
+
+
+
+        // This new code for the layer selection has been separated from the existing code so that one day we can sort all
+        // the above out and make it more WPF with bindings and other dark magic like that.
+        #region PropertyChangedEvent and Helpers
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// Call the PropertyChangedEvent for a single property.
+        /// </summary>
+        private void NotifyChanged(string prop) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
+
+        /// <summary>
+        /// Sets a field and calls <see cref="NotifyChanged(string)"/> with the calling member name and any additional properties.
+        /// Designed for setting a field from a property.
+        /// </summary>
+        private void SetField<T>(ref T var, T value, string[] additional = null, [CallerMemberName] string name = null) {
+            var = value;
+            NotifyChanged(name);
+            if (additional != null)
+                foreach (var prop in additional)
+                    NotifyChanged(prop);
+        }
+        #endregion
+
+        #region Properties
+        /// <summary>A reference to the currently selected layer in either the regular or overlay layer list. When set, will update the <see cref="SelectedControl"/> property.</summary>
+        public Layer SelectedLayer {
+            get => selectedLayer;
+            set {
+                SetField(ref selectedLayer, value);
+                if (value == null)
+                    SelectedControl = FocusedApplication?.Control;
+                else {
+                    layerPresenter.Layer = value;
+                    SelectedControl = layerPresenter;
+                }
+            }
+        }
+        private Layer selectedLayer;
+
+       /// <summary>The control that is currently displayed underneath they device preview panel. This could be an overview control or a layer presenter etc.</summary>
+        public Control SelectedControl { get => selectedControl; set => SetField(ref selectedControl, value); }
+        private Control selectedControl;
+        #endregion
     }
 }
-
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

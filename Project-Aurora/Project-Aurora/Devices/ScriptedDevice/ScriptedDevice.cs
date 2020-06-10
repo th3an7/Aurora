@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 using Aurora.Settings;
+using Microsoft.Win32.TaskScheduler;
 
 namespace Aurora.Devices.ScriptedDevice
 {
@@ -39,7 +43,7 @@ namespace Aurora.Devices.ScriptedDevice
 
         public string GetDeviceDetails()
         {
-            if(crashed)
+            if (crashed)
                 return devicename + ": Error!";
 
             if (isInitialized)
@@ -63,7 +67,7 @@ namespace Aurora.Devices.ScriptedDevice
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(string.Format("Device script for {0} encountered an error during Initialization. Exception: {1}", devicename, exc), Logging_Level.External);
+                    Global.logger.Error("Device script for {0} encountered an error during Initialization. Exception: {1}", devicename, exc);
                     crashed = true;
                     isInitialized = false;
 
@@ -109,7 +113,7 @@ namespace Aurora.Devices.ScriptedDevice
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(string.Format("Device script for {0} encountered an error during Reset. Exception: {1}", devicename, exc), Logging_Level.External);
+                    Global.logger.Error("Device script for {0} encountered an error during Reset. Exception: {1}", devicename, exc);
                     crashed = true;
                     isInitialized = false;
                 }
@@ -128,14 +132,14 @@ namespace Aurora.Devices.ScriptedDevice
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(string.Format("Device script for {0} encountered an error during Shutdown. Exception: {1}", devicename, exc), Logging_Level.External);
+                    Global.logger.Error("Device script for {0} encountered an error during Shutdown. Exception: {1}", devicename, exc);
                     crashed = true;
                     isInitialized = false;
                 }
             }
         }
 
-        public bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, bool forced = false)
+        public bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, DoWorkEventArgs e, bool forced = false)
         {
             if (isInitialized)
             {
@@ -145,7 +149,9 @@ namespace Aurora.Devices.ScriptedDevice
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(string.Format("Device script for {0} encountered an error during UpdateDevice. Exception: {1}", devicename, exc), Logging_Level.External);
+                    Global.logger.Error(
+                        "Device script for {0} encountered an error during UpdateDevice. Exception: {1}",
+                        devicename, exc);
                     crashed = true;
                     isInitialized = false;
 
@@ -158,11 +164,11 @@ namespace Aurora.Devices.ScriptedDevice
             }
         }
 
-        public bool UpdateDevice(DeviceColorComposition colorComposition, bool forced = false)
+        public bool UpdateDevice(DeviceColorComposition colorComposition, DoWorkEventArgs e, bool forced = false)
         {
             watch.Restart();
 
-            bool update_result = UpdateDevice(colorComposition.keyColors, forced);
+            bool update_result = UpdateDevice(colorComposition.keyColors, e, forced);
 
             watch.Stop();
             lastUpdateTime = watch.ElapsedMilliseconds;
@@ -177,7 +183,7 @@ namespace Aurora.Devices.ScriptedDevice
 
         public VariableRegistry GetRegisteredVariables()
         {
-            if(script.GetType().GetMethod("GetRegisteredVariables") != null)
+            if (script.GetType().GetMethod("GetRegisteredVariables") != null)
                 return script.GetRegisteredVariables();
             else
                 return new VariableRegistry();

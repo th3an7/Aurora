@@ -129,7 +129,7 @@ namespace Aurora.EffectsEngine.Animations
         {
             //Duration cannot be negative
             if (duration < 0)
-                Global.logger.LogLine($"Negative duration!!! duration={duration}", Logging_Level.Warning);
+                Global.logger.Warn($"Negative duration!!! duration={duration}");
             else
                 _duration = duration;
 
@@ -151,7 +151,7 @@ namespace Aurora.EffectsEngine.Animations
             return this;
         }
 
-        public virtual void Draw(Graphics g, float scale = 1.0f) { }
+        public virtual void Draw(Graphics g, float scale = 1.0f, PointF offset = default(PointF)) { }
         public virtual AnimationFrame BlendWith(AnimationFrame otherAnim, double amount)
         {
             amount = GetTransitionValue(amount);

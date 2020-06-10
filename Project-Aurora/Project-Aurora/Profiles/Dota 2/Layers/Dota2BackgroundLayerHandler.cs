@@ -64,11 +64,6 @@ namespace Aurora.Profiles.Dota_2.Layers
         private double dim_value = 1.0;
         private int dim_bg_at = 15;
 
-        public Dota2BackgroundLayerHandler() : base()
-        {
-            _ID = "Dota2Background";
-        }
-
         protected override UserControl CreateControl()
         {
             return new Control_Dota2BackgroundLayer(this);
@@ -85,7 +80,7 @@ namespace Aurora.Profiles.Dota_2.Layers
                 if (dota2state.Previously.Hero.HealthPercent == 0 && dota2state.Hero.HealthPercent == 100 && !dota2state.Previously.Hero.IsAlive && dota2state.Hero.IsAlive)
                 {
                     isDimming = false;
-                    dim_bg_at = dota2state.Map.GameTime + (this.Application.Profile as Dota2Profile).bg_dim_after;
+                    dim_bg_at = dota2state.Map.GameTime + (int)this.Properties.DimDelay;
                     dim_value = 1.0;
                 }
 

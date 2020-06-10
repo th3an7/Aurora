@@ -6,16 +6,17 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using Aurora.EffectsEngine;
 using Aurora.Profiles;
+using Aurora.Settings.Overrides;
 
 namespace Aurora.Settings.Layers
 {
+    [LogicOverrideIgnoreProperty("_PrimaryColor")]
+    [LogicOverrideIgnoreProperty("_Opacity")]
+    [LogicOverrideIgnoreProperty("_Enabled")]
+    [LogicOverrideIgnoreProperty("_Sequence")]
+    [LayerHandlerMeta(Order = -1, IsDefault = true)]
     public class DefaultLayerHandler : LayerHandler<LayerHandlerProperties>
     {
-        public DefaultLayerHandler()
-        {
-            _ID = "Default";
-        }
-
         protected override UserControl CreateControl()
         {
             return new Control_DefaultLayer();

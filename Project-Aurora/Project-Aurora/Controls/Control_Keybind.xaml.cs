@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using SharpDX.RawInput;
 
 namespace Aurora.Controls
 {
@@ -47,16 +48,16 @@ namespace Aurora.Controls
 
         public event NewKeybindArgs KeybindUpdated;
 
-        private static Control_Keybind _ActiveKeybind = null; //Makes sure that only one keybind can be set at a time
+        public static Control_Keybind _ActiveKeybind { get; private set; } = null; //Makes sure that only one keybind can be set at a time
 
         public Control_Keybind()
         {
             InitializeComponent();
 
-            Global.input_subscriptions.KeyDown += Input_subscriptions_KeyDown;
+            Global.InputEvents.KeyDown += InputEventsKeyDown;
         }
 
-        private void Input_subscriptions_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
+        private void InputEventsKeyDown(object sender, KeyboardInputEventArgs e)
         {
             Dispatcher.Invoke(
                 () =>
@@ -64,7 +65,7 @@ namespace Aurora.Controls
 
                     if (this.Equals(_ActiveKeybind))
                     {
-                        System.Windows.Forms.Keys[] _PressedKeys = Global.input_subscriptions.PressedKeys;
+                        System.Windows.Forms.Keys[] _PressedKeys = Global.InputEvents.PressedKeys;
 
                         if (ContextKeybind != null)
                         {
@@ -78,11 +79,13 @@ namespace Aurora.Controls
                 });
         }
 
+        private bool isRecording = false;
         public void Start()
         {
             if (_ActiveKeybind != null)
                 _ActiveKeybind.Stop();
 
+            isRecording = true;
             _ActiveKeybind = this;
 
             buttonToggleAssign.Content = "Stop";
@@ -91,16 +94,28 @@ namespace Aurora.Controls
         public void Stop()
         {
             buttonToggleAssign.Content = "Assign";
+            isRecording = false;
             _ActiveKeybind = null;
             KeybindUpdated?.Invoke(this, ContextKeybind);
         }
 
         private void buttonToggleAssign_Click(object sender, RoutedEventArgs e)
         {
-            if (this.Equals(_ActiveKeybind))
+            if (isRecording)
                 Stop();
             else
                 Start();
+        }
+
+        private void Grid_LostFocus(object sender, RoutedEventArgs e)
+        {
+            Stop();
+        }
+
+        private void Grid_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.Key.Equals(Key.Down) || e.Key.Equals(Key.Up) || e.Key.Equals(Key.Left) || e.Key.Equals(Key.Right)) && isRecording)
+                e.Handled = true;
         }
     }
 }

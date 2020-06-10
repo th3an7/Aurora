@@ -37,8 +37,6 @@ namespace Aurora.Settings.Layers
         {
             if (this.DataContext is PercentLayerHandler && !settingsset)
             {
-                this.ComboBox_variable.Text = (this.DataContext as PercentLayerHandler).Properties._VariablePath;
-                this.ComboBox_max_variable.Text = (this.DataContext as PercentLayerHandler).Properties._MaxVariablePath;
                 this.ColorPicker_progressColor.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor((this.DataContext as PercentLayerHandler).Properties._PrimaryColor ?? System.Drawing.Color.Empty);
                 this.ColorPicker_backgroundColor.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor((this.DataContext as PercentLayerHandler).Properties._SecondaryColor ?? System.Drawing.Color.Empty);
                 this.ComboBox_effect_type.SelectedIndex = (int)(this.DataContext as PercentLayerHandler).Properties._PercentType;
@@ -51,22 +49,7 @@ namespace Aurora.Settings.Layers
 
         internal void SetProfile(Profiles.Application profile)
         {
-            if (profile != null && !profileset)
-            {
-                var var_types_numerical = profile.ParameterLookup?.Where(kvp => Utils.TypeUtils.IsNumericType(kvp.Value.Item1));
-
-                this.ComboBox_variable.Items.Clear();
-                foreach (var item in var_types_numerical)
-                    this.ComboBox_variable.Items.Add(item.Key);
-
-                this.ComboBox_max_variable.Items.Clear();
-                foreach (var item in var_types_numerical)
-                    this.ComboBox_max_variable.Items.Add(item.Key);
-
-                profileset = true;
-            }
-            settingsset = false;
-            this.SetSettings();
+            variablePicker.Application = maxVariablePicker.Application = profile;
         }
 
         private void KeySequence_keys_SequenceUpdated(object sender, EventArgs e)
@@ -125,6 +108,14 @@ namespace Aurora.Settings.Layers
             if (IsLoaded && settingsset && this.DataContext is PercentLayerHandler && sender is CheckBox && (sender as CheckBox).IsChecked.HasValue)
             {
                 (this.DataContext as PercentLayerHandler).Properties._BlinkDirection = (sender as CheckBox).IsChecked.Value;
+            }
+        }
+
+        private void CheckBox_blinkbackground_Checked(object sender, RoutedEventArgs e)
+        {
+            if (IsLoaded && settingsset && this.DataContext is PercentLayerHandler && sender is CheckBox && (sender as CheckBox).IsChecked.HasValue)
+            {
+                (this.DataContext as PercentLayerHandler).Properties._BlinkBackground = (sender as CheckBox).IsChecked.Value;
             }
         }
     }

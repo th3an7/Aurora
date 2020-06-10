@@ -1,4 +1,5 @@
-﻿using Aurora.EffectsEngine;
+﻿
+using Aurora.EffectsEngine;
 using Aurora.Profiles.CSGO.GSI;
 using Aurora.Profiles.CSGO.GSI.Nodes;
 using Aurora.Settings;
@@ -41,6 +42,11 @@ namespace Aurora.Profiles.CSGO.Layers
         [JsonIgnore]
         public double DimDelay { get { return Logic._DimDelay ?? _DimDelay ?? 0.0; } }
 
+        public int? _DimAmount { get; set; }
+
+        [JsonIgnore]
+        public int DimAmount { get { return Logic._DimAmount ?? _DimAmount ?? 100; } }
+
         public CSGOBackgroundLayerHandlerProperties() : base() { }
 
         public CSGOBackgroundLayerHandlerProperties(bool assign_default = false) : base(assign_default) { }
@@ -50,10 +56,11 @@ namespace Aurora.Profiles.CSGO.Layers
             base.Default();
 
             this._DefaultColor = Color.FromArgb(158, 205, 255);
-            this._CTColor = Color.FromArgb(158, 205, 255);
+            this._CTColor = Color.FromArgb(33, 155, 221);
             this._TColor = Color.FromArgb(221, 99, 33);
             this._DimEnabled = true;
             this._DimDelay = 15;
+            this._DimAmount = 20;
         }
 
     }
@@ -61,13 +68,8 @@ namespace Aurora.Profiles.CSGO.Layers
     public class CSGOBackgroundLayerHandler : LayerHandler<CSGOBackgroundLayerHandlerProperties>
     {
         private bool isDimming = false;
-        private double dim_value = 1.0;
+        private double dim_value = 100.0;
         private long dim_bg_at = 15;
-
-        public CSGOBackgroundLayerHandler() : base()
-        {
-            _ID = "CSGOBackground";
-        }
 
         protected override UserControl CreateControl()
         {
@@ -85,10 +87,9 @@ namespace Aurora.Profiles.CSGO.Layers
                 if (csgostate.Player.State.Health == 100 && ((csgostate.Previously.Player.State.Health > -1 && csgostate.Previously.Player.State.Health < 100) || (csgostate.Round.WinTeam == RoundWinTeam.Undefined && csgostate.Previously.Round.WinTeam != RoundWinTeam.Undefined)) && csgostate.Provider.SteamID.Equals(csgostate.Player.SteamID))
                 {
                     isDimming = false;
-                    dim_bg_at = Utils.Time.GetMillisecondsSinceEpoch() + (Application.Profile as CSGOProfile).bg_dim_after * 1000L;
-                    dim_value = 1.0;
+                    dim_bg_at = Utils.Time.GetMillisecondsSinceEpoch() + (long)(this.Properties.DimDelay * 1000D);
+                    dim_value = 100.0;
                 }
-
 
                 Color bg_color = this.Properties.DefaultColor;
 
@@ -109,12 +110,12 @@ namespace Aurora.Profiles.CSGO.Layers
                     if (dim_bg_at <= Utils.Time.GetMillisecondsSinceEpoch() || csgostate.Player.State.Health == 0)
                     {
                         isDimming = true;
-                        bg_color = Utils.ColorUtils.MultiplyColorByScalar(bg_color, getDimmingValue());
+                        bg_color = Utils.ColorUtils.MultiplyColorByScalar(bg_color, (getDimmingValue() / 100));
                     }
                     else
                     {
                         isDimming = false;
-                        dim_value = 1.0;
+                        dim_value = 100.0;
                     }
                 }
 
@@ -134,11 +135,11 @@ namespace Aurora.Profiles.CSGO.Layers
         {
             if (isDimming && Properties.DimEnabled)
             {
-                dim_value -= 0.02;
-                return dim_value = (dim_value < 0.0 ? 0.0 : dim_value);
+                dim_value -= 2.0;
+                return dim_value = (dim_value < Math.Abs(Properties.DimAmount - 100) ? Math.Abs(Properties.DimAmount - 100) : dim_value);
             }
             else
-                return dim_value = 1.0;
+                return dim_value = 100.0;
         }
     }
 }

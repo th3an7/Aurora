@@ -13,6 +13,13 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Win32.TaskScheduler;
+using System.Windows.Data;
+using RazerSdkWrapper.Utils;
+using System.Net;
+using RazerSdkWrapper.Data;
+using System.Windows.Threading;
+using Aurora.Devices.Asus.Config;
+using Aurora.Utils;
 
 namespace Aurora.Settings
 {
@@ -24,10 +31,6 @@ namespace Aurora.Settings
         private RegistryKey runRegistryPath = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
         private const string StartupTaskID = "AuroraStartup";
 
-        private Window winBitmapView = null;
-        private Image imgBitmap = new Image();
-        private static bool bitmapViewOpen;
-
         public Control_Settings()
         {
             InitializeComponent();
@@ -36,9 +39,52 @@ namespace Aurora.Settings
 
             if (runRegistryPath.GetValue("Aurora") != null)
                 runRegistryPath.DeleteValue("Aurora");
-            using (TaskService service = new TaskService()) {
-                this.run_at_win_startup.IsChecked = service.FindTask(StartupTaskID)?.Enabled ?? false;//!(runRegistryPath.GetValue("Aurora", null) == null);
+
+            try
+            {
+                using (TaskService service = new TaskService())
+                {
+                    Microsoft.Win32.TaskScheduler.Task task = service.FindTask(StartupTaskID);
+                    if (task != null)
+                    {
+                        TaskDefinition definition = task.Definition;
+                        //Update path of startup task
+                        string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                        definition.Actions.Clear();
+                        definition.Actions.Add(new ExecAction(exePath, "-silent", Path.GetDirectoryName(exePath)));
+                        service.RootFolder.RegisterTaskDefinition(StartupTaskID, definition);
+                        this.run_at_win_startup.IsChecked = task.Enabled;
+                        startDelayAmount.Value = task.Definition.Triggers.FirstOrDefault(t => t.TriggerType == TaskTriggerType.Logon) is LogonTrigger trigger ? (int)trigger.Delay.TotalSeconds : 0;
+                    }
+                    else
+                    {
+                        TaskDefinition td = service.NewTask();
+                        td.RegistrationInfo.Description = "Start Aurora on Startup";
+
+                        td.Triggers.Add(new LogonTrigger { Enabled = true });
+
+                        string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+                        td.Actions.Add(new ExecAction(exePath, "-silent", Path.GetDirectoryName(exePath)));
+
+                        td.Principal.RunLevel = TaskRunLevel.Highest;
+                        td.Settings.DisallowStartIfOnBatteries = false;
+                        td.Settings.DisallowStartOnRemoteAppSession = false;
+                        td.Settings.ExecutionTimeLimit = TimeSpan.Zero;
+
+                        service.RootFolder.RegisterTaskDefinition(StartupTaskID, td);
+                        this.run_at_win_startup.IsChecked = true;
+                    }
+                }
             }
+            catch(Exception exc)
+            {
+                Global.logger.Error("Error caught when updating startup task. Error: " + exc.ToString());
+            }
+
+            string v = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion;
+
+            this.lblVersion.Content = ((int.Parse(v[0].ToString()) > 0) ? "" : "beta ") + $"v{v}";
 
             this.start_silently_enabled.IsChecked = Global.Configuration.start_silently;
 
@@ -48,7 +94,7 @@ namespace Aurora.Settings
 
             load_excluded_listbox();
 
-            this.volume_as_brightness_enabled.IsChecked = Global.Configuration.use_volume_as_brightness;
+            this.volume_as_brightness_enabled.IsChecked = Global.Configuration.UseVolumeAsBrightness;
 
             this.timed_dimming_checkbox.IsChecked = Global.Configuration.time_based_dimming_enabled;
             this.timed_dimming_start_hour_updown.Value = Global.Configuration.time_based_dimming_start_hour;
@@ -62,26 +108,6 @@ namespace Aurora.Settings
             this.nighttime_start_minute_updown.Value = Global.Configuration.nighttime_start_minute;
             this.nighttime_end_hour_updown.Value = Global.Configuration.nighttime_end_hour;
             this.nighttime_end_minute_updown.Value = Global.Configuration.nighttime_end_minute;
-
-
-            this.volume_overlay_enabled.IsChecked = Global.Configuration.volume_overlay_settings.enabled;
-            this.volume_low_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.volume_overlay_settings.low_color);
-            this.volume_med_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.volume_overlay_settings.med_color);
-            this.volume_high_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.volume_overlay_settings.high_color);
-            this.volume_ks.Sequence = Global.Configuration.volume_overlay_settings.sequence;
-            this.volume_effects_delay.Value = Global.Configuration.volume_overlay_settings.delay;
-            this.volume_overlay_dim_background.IsChecked = Global.Configuration.volume_overlay_settings.dim_background;
-            this.volume_overlay_dim_color.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.volume_overlay_settings.dim_color);
-
-            this.skype_overlay_enabled.IsChecked = Global.Configuration.skype_overlay_settings.enabled;
-            this.skype_unread_messages_enabled.IsChecked = Global.Configuration.skype_overlay_settings.mm_enabled;
-            this.skype_unread_primary_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.skype_overlay_settings.mm_color_primary);
-            this.skype_unread_secondary_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.skype_overlay_settings.mm_color_secondary);
-            this.skype_unread_messages_ks.Sequence = Global.Configuration.skype_overlay_settings.mm_sequence;
-            this.skype_incoming_calls_enabled.IsChecked = Global.Configuration.skype_overlay_settings.call_enabled;
-            this.skype_incoming_calls_primary_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.skype_overlay_settings.call_color_primary);
-            this.skype_incoming_calls_secondary_colorpicker.SelectedColor = Utils.ColorUtils.DrawingColorToMediaColor(Global.Configuration.skype_overlay_settings.call_color_secondary);
-            this.skype_incoming_calls_ks.Sequence = Global.Configuration.skype_overlay_settings.call_sequence;
 
             this.idle_effects_type.SelectedIndex = (int)Global.Configuration.idle_type;
             this.idle_effects_delay.Value = Global.Configuration.idle_delay;
@@ -103,47 +129,51 @@ namespace Aurora.Settings
             this.devices_disable_headset_lighting.IsChecked = Global.Configuration.devices_disable_headset;
 
             this.updates_autocheck_on_start.IsChecked = Global.Configuration.updates_check_on_start_up;
-            this.updates_background_install_minor.IsChecked = Global.Configuration.updates_allow_silent_minor;
-        }
 
-        private void OnLayerRendered(System.Drawing.Bitmap map)
-        {
-            try
+            var rzVersion = RzHelper.GetSdkVersion();
+            var rzSdkEnabled = RzHelper.IsSdkEnabled();
+
+            this.razer_wrapper_installed_version_label.Content = rzVersion.ToString();
+            this.razer_wrapper_installed_version_label.Foreground = new SolidColorBrush(RzHelper.IsSdkVersionSupported(rzVersion) ? Colors.LightGreen : Colors.PaleVioletRed);
+            this.razer_wrapper_supported_versions_label.Content = $"[{RzHelper.SupportedFromVersion}-{RzHelper.SupportedToVersion}]";
+
+            if (rzVersion == new RzSdkVersion())
+                this.razer_wrapper_uninstall_button.Visibility = Visibility.Hidden;
+
+            this.razer_wrapper_enabled_label.Content = rzSdkEnabled ? "Enabled" : "Disabled";
+            this.razer_wrapper_enabled_label.Foreground = rzSdkEnabled ? new SolidColorBrush(Colors.LightGreen) : new SolidColorBrush(Colors.PaleVioletRed);
+
+            if (Global.razerSdkManager != null)
             {
-                Dispatcher.Invoke(
-                            () =>
-                            {
-                                using (MemoryStream memory = new MemoryStream())
-                                {
-                                    map.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                                    memory.Position = 0;
-                                    BitmapImage bitmapimage = new BitmapImage();
-                                    bitmapimage.BeginInit();
-                                    bitmapimage.StreamSource = memory;
-                                    bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-                                    bitmapimage.EndInit();
+                this.razer_wrapper_connection_status_label.Content = "Success";
+                this.razer_wrapper_connection_status_label.Foreground = new SolidColorBrush(Colors.LightGreen);
 
-                                    this.debug_bitmap_preview.Width = 4 * bitmapimage.Width;
-                                    this.debug_bitmap_preview.Height = 4 * bitmapimage.Height;
-                                    this.debug_bitmap_preview.Source = bitmapimage;
-                                }
-                            });
+                {
+                    var appList = Global.razerSdkManager.GetDataProvider<RzAppListDataProvider>();
+                    appList.Update();
+                    this.razer_wrapper_current_application_label.Content = $"{appList.CurrentAppExecutable ?? "None"} [{appList.CurrentAppPid}]";
+                }
+
+                Global.razerSdkManager.DataUpdated += (s, _) =>
+                {
+                    if (!(s is RzAppListDataProvider appList))
+                        return;
+
+                    appList.Update();
+                    Global.logger.Debug("RazerManager current app: {0} [{1}]", appList.CurrentAppExecutable ?? "None", appList.CurrentAppPid);
+                    Dispatcher.BeginInvoke(DispatcherPriority.Background, (System.Action)(() => this.razer_wrapper_current_application_label.Content = $"{appList.CurrentAppExecutable} [{appList.CurrentAppPid}]"));
+                };
             }
-            catch (Exception ex)
+            else
             {
-                Global.logger.LogLine(ex.ToString(), Logging_Level.Warning);
+                this.razer_wrapper_connection_status_label.Content = "Failure";
+                this.razer_wrapper_connection_status_label.Foreground = new SolidColorBrush(Colors.PaleVioletRed);
             }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            Global.effengine.NewLayerRender += OnLayerRendered;
             this.ctrlPluginManager.Host = Global.PluginManager;
-        }
-
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            Global.effengine.NewLayerRender -= OnLayerRendered;
         }
 
         private void app_exit_mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -168,7 +198,7 @@ namespace Aurora.Settings
         {
             if (IsLoaded)
             {
-                Global.Configuration.use_volume_as_brightness = (this.volume_as_brightness_enabled.IsChecked.HasValue) ? this.volume_as_brightness_enabled.IsChecked.Value : false;
+                Global.Configuration.UseVolumeAsBrightness = (this.volume_as_brightness_enabled.IsChecked.HasValue) ? this.volume_as_brightness_enabled.IsChecked.Value : false;
                 ConfigManager.Save(Global.Configuration);
             }
         }
@@ -360,13 +390,9 @@ namespace Aurora.Settings
 
         private void excluded_add_Click(object sender, RoutedEventArgs e)
         {
-            if (!String.IsNullOrWhiteSpace(this.excluded_process_name.Text))
-            {
-                if (!Global.Configuration.excluded_programs.Contains(this.excluded_process_name.Text))
-                {
-                    Global.Configuration.excluded_programs.Add(this.excluded_process_name.Text);
-                }
-            }
+            Window_ProcessSelection dialog = new Window_ProcessSelection { ButtonLabel = "Exclude Process" };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ChosenExecutableName)) // do not need to check if dialog is already in excluded_programs since it is a Set and only contains unique items by definition
+                Global.Configuration.excluded_programs.Add(dialog.ChosenExecutableName);
 
             load_excluded_listbox();
         }
@@ -383,51 +409,6 @@ namespace Aurora.Settings
             }
 
             load_excluded_listbox();
-        }
-
-        private void volume_overlay_enabled_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.volume_overlay_settings.enabled = (this.volume_overlay_enabled.IsChecked.HasValue) ? this.volume_overlay_enabled.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void volume_low_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.volume_low_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.volume_overlay_settings.low_color = Utils.ColorUtils.MediaColorToDrawingColor(this.volume_low_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void volume_med_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.volume_med_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.volume_overlay_settings.med_color = Utils.ColorUtils.MediaColorToDrawingColor(this.volume_med_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void volume_high_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.volume_high_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.volume_overlay_settings.high_color = Utils.ColorUtils.MediaColorToDrawingColor(this.volume_high_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void volume_ks_SequenceUpdated(object sender, EventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.volume_overlay_settings.sequence = (sender as Controls.KeySequence).Sequence;
-                ConfigManager.Save(Global.Configuration);
-            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -454,69 +435,39 @@ namespace Aurora.Settings
             label.Text = (int)(sld.Value * 100) + " %";
         }
 
+        private void slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            Slider sld = sender as Slider;
+            if (sld == null)
+                return;
+
+            TextBlock label = sld.Tag as TextBlock;
+
+            if (label == null)
+                return;
+
+            label.Text = sld.Value.ToString();
+        }
+
         private void run_at_win_startup_Checked(object sender, RoutedEventArgs e)
         {
             if (IsLoaded && sender is CheckBox)
             {
                 try
                 {
-                    /*if ((sender as CheckBox).IsChecked.Value)
-                        runRegistryPath.SetValue("Aurora", "\"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\" -silent");
-                    else
-                        runRegistryPath.DeleteValue("Aurora");*/
-
                     using (TaskService ts = new TaskService())
                     {
                         //Find existing task
                         var task = ts.FindTask(StartupTaskID);
-                        if ((sender as CheckBox).IsChecked.Value)
-                        {
-                            if (task != null)
-                            {
-                                task.Enabled = true;
-                            }
-                            else
-                            {
-                                TaskDefinition td = ts.NewTask();
-                                td.RegistrationInfo.Description = "Start Aurora on Startup";
-
-                                td.Triggers.Add(new LogonTrigger { Enabled = true });
-
-                                string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-
-                                td.Actions.Add(new ExecAction(exePath, "-silent", Path.GetDirectoryName(exePath)));
-
-                                td.Principal.RunLevel = TaskRunLevel.Highest;
-                                td.Settings.DisallowStartIfOnBatteries = false;
-                                td.Settings.DisallowStartOnRemoteAppSession = false;
-                                td.Settings.ExecutionTimeLimit = TimeSpan.Zero;
-
-                                ts.RootFolder.RegisterTaskDefinition(StartupTaskID, td);
-                            }
-                        }
-                        else
-                        {
-                            if (task != null)
-                                task.Enabled = false;
-                            //ts.RootFolder.DeleteTask(StartupTaskID);
-                        }
+                        task.Enabled = (sender as CheckBox).IsChecked.Value;
                     }
                 }
                 catch(Exception exc)
                 {
-                    Global.logger.LogLine("run_at_win_startup_Checked Exception: " + exc, Logging_Level.Error);
+                    Global.logger.Error("run_at_win_startup_Checked Exception: " + exc);
                 }
             }
 
-        }
-
-        private void volume_effects_delay_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            if (IsLoaded && volume_effects_delay.Value.HasValue)
-            {
-                Global.Configuration.volume_overlay_settings.delay = volume_effects_delay.Value.Value;
-                ConfigManager.Save(Global.Configuration);
-            }
         }
 
         private void devices_retry_Click(object sender, RoutedEventArgs e)
@@ -539,6 +490,23 @@ namespace Aurora.Settings
         private void devices_view_first_time_razer_Click(object sender, RoutedEventArgs e)
         {
             Devices.Razer.RazerInstallInstructions instructions = new Devices.Razer.RazerInstallInstructions();
+            instructions.ShowDialog();
+        }
+        private void devices_view_first_time_steelseries_Click(object sender, RoutedEventArgs e)
+        {
+            Devices.SteelSeries.SteelSeriesInstallInstructions instructions = new Devices.SteelSeries.SteelSeriesInstallInstructions();
+            instructions.ShowDialog();
+        }
+
+        private void devices_view_first_time_dualshock_Click(object sender, RoutedEventArgs e)
+        {
+            Devices.Dualshock.DualshockInstallInstructions instructions = new Devices.Dualshock.DualshockInstallInstructions();
+            instructions.ShowDialog();
+        }
+
+        private void devices_view_first_time_roccat_Click(object sender, RoutedEventArgs e)
+        {
+            Devices.Roccat.RoccatInstallInstructions instructions = new Devices.Roccat.RoccatInstallInstructions();
             instructions.ShowDialog();
         }
 
@@ -570,7 +538,6 @@ namespace Aurora.Settings
                 {
                     ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.FileName = updater_path;
-                    startInfo.Arguments = Global.Configuration.updates_allow_silent_minor ? "-silent_minor" : "";
                     Process.Start(startInfo);
                 }
                 else
@@ -585,15 +552,6 @@ namespace Aurora.Settings
             if (IsLoaded)
             {
                 Global.Configuration.updates_check_on_start_up = (this.updates_autocheck_on_start.IsChecked.HasValue) ? this.updates_autocheck_on_start.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void updates_background_install_minor_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.updates_allow_silent_minor = (this.updates_background_install_minor.IsChecked.HasValue) ? this.updates_background_install_minor.IsChecked.Value : false;
                 ConfigManager.Save(Global.Configuration);
             }
         }
@@ -650,7 +608,7 @@ namespace Aurora.Settings
                 Global.Configuration.keyboard_localization = (PreferredKeyboardLocalization)Enum.Parse(typeof(PreferredKeyboardLocalization), this.devices_kb_layout.SelectedIndex.ToString());
                 ConfigManager.Save(Global.Configuration);
 
-                Global.kbLayout.LoadBrand(Global.Configuration.keyboard_brand, Global.Configuration.mouse_preference, Global.Configuration.mouse_orientation);
+                Global.kbLayout.LoadBrandDefault();
             }
         }
 
@@ -661,7 +619,7 @@ namespace Aurora.Settings
                 Global.Configuration.keyboard_brand = (PreferredKeyboard)Enum.Parse(typeof(PreferredKeyboard), this.devices_kb_brand.SelectedItem.ToString());
                 ConfigManager.Save(Global.Configuration);
 
-                Global.kbLayout.LoadBrand(Global.Configuration.keyboard_brand, Global.Configuration.mouse_preference, Global.Configuration.mouse_orientation);
+                Global.kbLayout.LoadBrandDefault();
             }
         }
 
@@ -672,7 +630,7 @@ namespace Aurora.Settings
                 Global.Configuration.mouse_preference = (PreferredMouse)Enum.Parse(typeof(PreferredMouse), this.devices_mouse_brand.SelectedItem.ToString());
                 ConfigManager.Save(Global.Configuration);
 
-                Global.kbLayout.LoadBrand(Global.Configuration.keyboard_brand, Global.Configuration.mouse_preference, Global.Configuration.mouse_orientation);
+                Global.kbLayout.LoadBrandDefault();
             }
         }
 
@@ -683,7 +641,7 @@ namespace Aurora.Settings
                 Global.Configuration.mouse_orientation = (MouseOrientationType)Enum.Parse(typeof(MouseOrientationType), this.devices_mouse_orientation.SelectedItem.ToString());
                 ConfigManager.Save(Global.Configuration);
 
-                Global.kbLayout.LoadBrand(Global.Configuration.keyboard_brand, Global.Configuration.mouse_preference, Global.Configuration.mouse_orientation);
+                Global.kbLayout.LoadBrandDefault();
             }
         }
 
@@ -694,7 +652,7 @@ namespace Aurora.Settings
                 Global.Configuration.virtualkeyboard_keycap_type = (KeycapType)Enum.Parse(typeof(KeycapType), this.ComboBox_virtualkeyboard_keycap_type.SelectedItem.ToString());
                 ConfigManager.Save(Global.Configuration);
 
-                Global.kbLayout.LoadBrand(Global.Configuration.keyboard_brand, Global.Configuration.mouse_preference, Global.Configuration.mouse_orientation);
+                Global.kbLayout.LoadBrandDefault();
             }
         }
 
@@ -730,95 +688,7 @@ namespace Aurora.Settings
                 Global.dev_manager.ResetDevices();
             }
         }
-
-        private void skype_overlay_enabled_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.skype_overlay_settings.enabled = (this.skype_overlay_enabled.IsChecked.HasValue) ? this.skype_overlay_enabled.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_run_integration_Click(object sender, RoutedEventArgs e)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = Path.Combine(Global.ExecutingDirectory, "Aurora-SkypeIntegration.exe");
-            Process.Start(startInfo);
-        }
-
-        private void skype_unread_messages_enabled_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.skype_overlay_settings.mm_enabled = (this.skype_unread_messages_enabled.IsChecked.HasValue) ? this.skype_unread_messages_enabled.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_unread_primary_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.skype_unread_primary_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.skype_overlay_settings.mm_color_primary = Utils.ColorUtils.MediaColorToDrawingColor(this.skype_unread_primary_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_unread_secondary_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.skype_unread_secondary_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.skype_overlay_settings.mm_color_secondary = Utils.ColorUtils.MediaColorToDrawingColor(this.skype_unread_secondary_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_unread_messages_ks_SequenceUpdated(object sender, EventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.skype_overlay_settings.mm_sequence = (sender as Controls.KeySequence).Sequence;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_incoming_calls_enabled_Checked(object sender, RoutedEventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.skype_overlay_settings.call_enabled = (this.skype_incoming_calls_enabled.IsChecked.HasValue) ? this.skype_incoming_calls_enabled.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_incoming_calls_primary_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.skype_incoming_calls_primary_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.skype_overlay_settings.call_color_primary = Utils.ColorUtils.MediaColorToDrawingColor(this.skype_incoming_calls_primary_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_incoming_calls_secondary_colorpicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.skype_incoming_calls_secondary_colorpicker.SelectedColor.HasValue)
-            {
-                Global.Configuration.skype_overlay_settings.call_color_secondary = Utils.ColorUtils.MediaColorToDrawingColor(this.skype_incoming_calls_secondary_colorpicker.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private void skype_incoming_calls_messages_ks_SequenceUpdated(object sender, EventArgs e)
-        {
-            if (IsLoaded)
-            {
-                Global.Configuration.skype_overlay_settings.call_sequence = (sender as Controls.KeySequence).Sequence;
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
+        
         private void start_silently_enabled_Checked(object sender, RoutedEventArgs e)
         {
             if (IsLoaded)
@@ -828,19 +698,136 @@ namespace Aurora.Settings
             }
         }
 
+        private void razer_wrapper_install_button_Click(object sender, RoutedEventArgs e)
+        {
+            void HandleExceptions(AggregateException ae)
+            {
+                ShowMessageBox(ae.ToString(), "Exception!", MessageBoxImage.Error);
+                ae.Handle(ex => {
+                    Global.logger.Error(ex.ToString());
+                    return true;
+                });
+            }
+
+            void SetButtonContent(string s)
+                => Application.Current.Dispatcher.Invoke(() => razer_wrapper_install_button.Content = s);
+
+            void ShowMessageBox(string message, string title, MessageBoxImage image = MessageBoxImage.Exclamation)
+                => Application.Current.Dispatcher.Invoke(() => System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, image));
+
+            razer_wrapper_install_button.IsEnabled = false;
+            razer_wrapper_uninstall_button.IsEnabled = false;
+
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                SetButtonContent("Uninstalling");
+                var uninstallSuccess = await RazerChromaUtils.UninstallAsync()
+                .ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                    {
+                        HandleExceptions(t.Exception);
+                        return false;
+                    }
+                    else if (t.Result == (int)RazerChromaInstallerExitCode.RestartRequired)
+                    {
+                        ShowMessageBox("The uninstaller requested system restart!\nPlease reboot your pc and re-run the installation.", "Restart required!");
+                        return false;
+                    }
+
+                    return true;
+                })
+                .ConfigureAwait(false);
+
+                if (!uninstallSuccess)
+                    return;
+
+                SetButtonContent("Downloading");
+                var downloadPath = await RazerChromaUtils.DownloadAsync()
+                .ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                    {
+                        HandleExceptions(t.Exception);
+                        return null;
+                    }
+
+                    return t.Result;
+                })
+                .ConfigureAwait(false);
+
+                if (downloadPath == null)
+                    return;
+
+                SetButtonContent("Installing");
+                await RazerChromaUtils.InstallAsync(downloadPath)
+                .ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                        HandleExceptions(t.Exception);
+                    else if (t.Result == (int)RazerChromaInstallerExitCode.RestartRequired)
+                        ShowMessageBox("The installer requested system restart!\nPlease reboot your pc.", "Restart required!");
+                    else
+                    {
+                        SetButtonContent("Done!");
+                        ShowMessageBox("Installation successful!\nPlease restart aurora for changes to take effect.", "Restart required!");
+                    }
+                })
+                .ConfigureAwait(false);
+            });
+        }
+
+        private void razer_wrapper_uninstall_button_Click(object sender, RoutedEventArgs e)
+        {
+            void HandleExceptions(AggregateException ae)
+            {
+                ShowMessageBox(ae.ToString(), "Exception!", MessageBoxImage.Error);
+                ae.Handle(ex => {
+                    Global.logger.Error(ex.ToString());
+                    return true;
+                });
+            }
+
+            void SetButtonContent(string s)
+                => Application.Current.Dispatcher.Invoke(() => razer_wrapper_uninstall_button.Content = s);
+            
+            void ShowMessageBox(string message, string title, MessageBoxImage image = MessageBoxImage.Exclamation)
+                => Application.Current.Dispatcher.Invoke(() => System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, image));
+
+            razer_wrapper_install_button.IsEnabled = false;
+            razer_wrapper_uninstall_button.IsEnabled = false;
+
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                SetButtonContent("Uninstalling");
+                await RazerChromaUtils.UninstallAsync()
+                .ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                        HandleExceptions(t.Exception);
+                    else if (t.Result == (int)RazerChromaInstallerExitCode.RestartRequired)
+                        ShowMessageBox("The uninstaller requested system restart!\nPlease reboot your pc.", "Restart required!");
+                    else if (t.Result == (int)RazerChromaInstallerExitCode.InvalidState)
+                        ShowMessageBox("There is nothing to install!", "Invalid State!");
+                    else
+                    {
+                        SetButtonContent("Done!");
+                        ShowMessageBox("Uninstallation successful!\nPlease restart aurora for changes to take effect.", "Restart required!");
+                    }
+                })
+                .ConfigureAwait(false);
+            });
+        }
+
         private void wrapper_install_logitech_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.FileName = @"Aurora.exe";
-                startInfo.Arguments = @"-install_logitech";
-                startInfo.Verb = "runas";
-                Process.Start(startInfo);
+                App.InstallLogitech();
             }
             catch (Exception exc)
             {
-                Global.logger.LogLine("Exception during Logitech Wrapper install. Exception: " + exc, Logging_Level.Error);
+                Global.logger.Error("Exception during Logitech Wrapper install. Exception: " + exc);
                 System.Windows.MessageBox.Show("Aurora Wrapper Patch for Logitech could not be applied.\r\nException: " + exc.Message);
             }
         }
@@ -869,7 +856,7 @@ namespace Aurora.Settings
             }
             catch (Exception exc)
             {
-                Global.logger.LogLine("Exception during Razer Wrapper install. Exception: " + exc, Logging_Level.Error);
+                Global.logger.Error("Exception during Razer Wrapper install. Exception: " + exc);
                 System.Windows.MessageBox.Show("Aurora Wrapper Patch for Razer could not be applied.\r\nException: " + exc.Message);
             }
         }
@@ -893,7 +880,7 @@ namespace Aurora.Settings
             }
             catch (Exception exc)
             {
-                Global.logger.LogLine("Exception during LightFX (32 bit) Wrapper install. Exception: " + exc, Logging_Level.Error);
+                Global.logger.Error("Exception during LightFX (32 bit) Wrapper install. Exception: " + exc);
                 System.Windows.MessageBox.Show("Aurora Wrapper Patch for LightFX (32 bit) could not be applied.\r\nException: " + exc.Message);
             }
         }
@@ -917,129 +904,21 @@ namespace Aurora.Settings
             }
             catch (Exception exc)
             {
-                Global.logger.LogLine("Exception during LightFX (64 bit) Wrapper install. Exception: " + exc, Logging_Level.Error);
+                Global.logger.Error("Exception during LightFX (64 bit) Wrapper install. Exception: " + exc);
                 System.Windows.MessageBox.Show("Aurora Wrapper Patch for LightFX (64 bit) could not be applied.\r\nException: " + exc.Message);
             }
         }
 
-        private void volume_overlay_dim_background_Checked(object sender, RoutedEventArgs e)
+        private void wrapper_asus_configure_devices_Click(object sender, RoutedEventArgs e)
         {
-            if (IsLoaded)
-            {
-                Global.Configuration.volume_overlay_settings.dim_background = (this.volume_overlay_dim_background.IsChecked.HasValue) ? this.volume_overlay_dim_background.IsChecked.Value : false;
-                ConfigManager.Save(Global.Configuration);
-            }
+            var window = new AsusConfigWindow();
+            window.Show();
         }
-
-        private void volume_overlay_dim_color_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (IsLoaded && this.volume_overlay_dim_color.SelectedColor.HasValue)
-            {
-                Global.Configuration.volume_overlay_settings.dim_color = Utils.ColorUtils.MediaColorToDrawingColor(this.volume_overlay_dim_color.SelectedColor.Value);
-                ConfigManager.Save(Global.Configuration);
-            }
-        }
-
-        private async void excluded_process_name_DropDownOpened(object sender, EventArgs e)
-        {
-            excluded_process_name.ItemsSource = new string[] { "Working..." };
-
-            HashSet<string> processes = new HashSet<string>();
-            await System.Threading.Tasks.Task.Run(() =>
-            {
-
-                foreach (var p in Process.GetProcesses())
-                {
-                    try
-                    {
-                        processes.Add(Path.GetFileName(p.MainModule.FileName));
-                    }
-                    catch (Exception exc)
-                    {
-
-                    }
-                }
-
-            });
-            excluded_process_name.ItemsSource = processes.ToArray();
-        }
-
-        private void btnShowBitmapWindow_Click(object sender, RoutedEventArgs e)
-        {
-            if (winBitmapView == null)
-            {
-                if (bitmapViewOpen == true)
-                {
-                    System.Windows.MessageBox.Show("Keyboard Bitmap View already open.\r\nPlease close it.");
-                    return;
-                }
-
-                winBitmapView = new Window();
-                winBitmapView.Closed += WinBitmapView_Closed;
-                winBitmapView.ResizeMode = ResizeMode.NoResize;
-                winBitmapView.SizeToContent = SizeToContent.WidthAndHeight;
-
-                winBitmapView.Title = "Keyboard Bitmap View";
-                winBitmapView.Background = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
-                Global.effengine.NewLayerRender += Effengine_NewLayerRender;
-
-                imgBitmap.SnapsToDevicePixels = true;
-                imgBitmap.HorizontalAlignment = HorizontalAlignment.Stretch;
-                imgBitmap.VerticalAlignment = VerticalAlignment.Stretch;
-                imgBitmap.MinWidth = Effects.canvas_width;
-                imgBitmap.MinHeight = Effects.canvas_height;
-                imgBitmap.Width = Effects.canvas_width * 4;
-                imgBitmap.Height = Effects.canvas_height * 4;
-
-                winBitmapView.Content = imgBitmap;
-
-                winBitmapView.UpdateLayout();
-                winBitmapView.Show();
-            }
-            else
-            {
-                winBitmapView.BringIntoView();
-            }
-        }
-
-        private void Effengine_NewLayerRender(System.Drawing.Bitmap bitmap)
-        {
-            try
-            {
-                Dispatcher.Invoke(
-                    () =>
-                    {
-                        using (MemoryStream memory = new MemoryStream())
-                        {
-                            bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                            memory.Position = 0;
-                            BitmapImage bitmapimage = new BitmapImage();
-                            bitmapimage.BeginInit();
-                            bitmapimage.StreamSource = memory;
-                            bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmapimage.EndInit();
-
-                            imgBitmap.Source = bitmapimage;
-                        }
-                    });
-            }
-            catch (Exception ex)
-            {
-                Global.logger.LogLine(ex.ToString(), Logging_Level.Warning);
-            }
-        }
-
-        private void WinBitmapView_Closed(object sender, EventArgs e)
-        {
-            winBitmapView = null;
-            Global.effengine.NewLayerRender -= Effengine_NewLayerRender;
-            bitmapViewOpen = false;
-        }
-
+        
         private void btnShowLogsFolder_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button)
-                System.Diagnostics.Process.Start(Global.logger.GetLogsDirectory());
+                System.Diagnostics.Process.Start(System.IO.Path.Combine(Global.LogsDirectory));
         }
 
         private void chkOverlayPreview_Checked(object sender, RoutedEventArgs e)
@@ -1049,6 +928,33 @@ namespace Aurora.Settings
                 Global.Configuration.OverlaysInPreview = (this.chkOverlayPreview.IsChecked.HasValue) ? this.chkOverlayPreview.IsChecked.Value : false;
                 ConfigManager.Save(Global.Configuration);
             }
+        }
+
+        private void chkHigherPriority_IsCheckedChanged(object sender, RoutedEventArgs e)
+        {
+            Process.GetCurrentProcess().PriorityClass = Global.Configuration.HighPriority ? ProcessPriorityClass.High : ProcessPriorityClass.Normal;
+        }
+
+        private void btnShowBitmapWindow_Click(object sender, RoutedEventArgs e) => Window_BitmapView.Open();
+
+        private void btnShowGSILog_Click(object sender, RoutedEventArgs e) => Window_GSIHttpDebug.Open();
+
+        private void startDelayAmount_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e) {
+            using (TaskService service = new TaskService()) {
+                var task = service.FindTask(StartupTaskID);
+                if (task != null && task.Definition.Triggers.FirstOrDefault(t => t.TriggerType == TaskTriggerType.Logon) is LogonTrigger trigger) {
+                    trigger.Delay = new TimeSpan(0, 0, ((IntegerUpDown)sender).Value ?? 0);
+                    task.RegisterChanges();
+                }
+            }
+        }
+
+        private void btnDumpSensors_Click(object sender, RoutedEventArgs e)
+        {
+            if (HardwareMonitor.TryDump())
+                System.Windows.MessageBox.Show("Successfully wrote sensor info to logs folder");
+            else
+                System.Windows.MessageBox.Show("Eror dumping file. Consult log for details.");
         }
     }
 }

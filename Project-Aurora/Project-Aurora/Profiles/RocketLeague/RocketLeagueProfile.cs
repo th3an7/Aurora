@@ -4,43 +4,17 @@ using Aurora.Settings.Layers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using Aurora.Profiles.RocketLeague.Layers;
+using Aurora.Settings.Overrides.Logic.Builder;
+using Aurora.Settings.Overrides.Logic;
 
 namespace Aurora.Profiles.RocketLeague
 {
-    public class RocketLeagueProfile : ApplicationProfile
+    public class RocketLeagueBMProfile : ApplicationProfile
     {
-        //Effects
-        //// Background
-        public bool bg_enabled;
-        public Color bg_ambient_color;
-        public bool bg_use_team_color;
-        public bool bg_user_defined_team_colors;
-        public Color bg_team_1;
-        public Color bg_team_2;
-        public bool bg_show_team_score_split;
-
-        //// Boost
-        public bool boost_enabled;
-        public Color boost_low;
-        public Color boost_mid;
-        public Color boost_high;
-        public KeySequence boost_sequence;
-        public bool boost_peripheral_use;
-
-        //// Speed
-        public bool speed_enabled;
-        public Color speed_low;
-        public Color speed_mid;
-        public Color speed_high;
-        public KeySequence speed_sequence;
-        public bool speed_peripheral_use;
-
-        //// Lighting Areas
-        public List<ColorZone> lighting_areas { get; set; }
-
-        public RocketLeagueProfile() : base()
+        public RocketLeagueBMProfile() : base()
         {
-            
+
         }
 
         public override void Reset()
@@ -48,6 +22,19 @@ namespace Aurora.Profiles.RocketLeague
             base.Reset();
             Layers = new System.Collections.ObjectModel.ObservableCollection<Layer>()
             {
+                new Layer("Boost Indicator (Peripheral)", new PercentGradientLayerHandler()
+                {
+                    Properties = new PercentGradientLayerHandlerProperties()
+                    {
+                        _PercentType = PercentEffectType.AllAtOnce,
+                        _Sequence = new KeySequence(new Devices.DeviceKeys[] { Devices.DeviceKeys.Peripheral, Devices.DeviceKeys.Peripheral_Logo } ),
+                        _Gradient = new EffectsEngine.EffectBrush(new ColorSpectrum(Color.Yellow, Color.Red).SetColorAt(0.75f, Color.OrangeRed)),
+                        _BlinkThreshold = 0.0,
+                        _BlinkDirection = false,
+                        _VariablePath = "Player/Boost",
+                        _MaxVariablePath = "1"
+                    },
+                }),
                 new Layer("Boost Indicator", new PercentGradientLayerHandler()
                 {
                     Properties = new PercentGradientLayerHandlerProperties()
@@ -61,63 +48,72 @@ namespace Aurora.Profiles.RocketLeague
                         _Gradient = new EffectsEngine.EffectBrush(new ColorSpectrum(Color.Yellow, Color.Red).SetColorAt(0.75f, Color.OrangeRed)),
                         _BlinkThreshold = 0.0,
                         _BlinkDirection = false,
-                        _VariablePath = "Player/BoostAmount",
-                        _MaxVariablePath = "1.0",
+                        _VariablePath = "Player/Boost",
+                        _MaxVariablePath = "1",
                     },
                 }),
-                new Layer("Boost Indicator (Peripheral)", new PercentGradientLayerHandler()
+                new Layer("Boost Background", new SolidColorLayerHandler()
                 {
-                    Properties = new PercentGradientLayerHandlerProperties()
+                    Properties = new LayerHandlerProperties()
                     {
-                        _PercentType = PercentEffectType.AllAtOnce,
-                        _Sequence = new KeySequence(new Devices.DeviceKeys[] { Devices.DeviceKeys.Peripheral } ),
-                        _Gradient = new EffectsEngine.EffectBrush(new ColorSpectrum(Color.Yellow, Color.Red).SetColorAt(0.75f, Color.OrangeRed)),
-                        _BlinkThreshold = 0.0,
-                        _BlinkDirection = false,
-                        _VariablePath = "Player/BoostAmount",
-                        _MaxVariablePath = "1.0"
-                    },
+                        _PrimaryColor = Color.Black,
+                        _Sequence = new KeySequence(new Devices.DeviceKeys[] {
+                            Devices.DeviceKeys.F1, Devices.DeviceKeys.F2, Devices.DeviceKeys.F3, Devices.DeviceKeys.F4, Devices.DeviceKeys.F5,
+                            Devices.DeviceKeys.F6, Devices.DeviceKeys.F7, Devices.DeviceKeys.F8, Devices.DeviceKeys.F9, Devices.DeviceKeys.F10,
+                            Devices.DeviceKeys.F11, Devices.DeviceKeys.F12
+                        })
+                    }
                 }),
-                new Layer("Rocket League Background", new Layers.RocketLeagueBackgroundLayerHandler())
+                new Layer("Goal Explosion", new RocketLeagueGoalExplosionLayerHandler()),
+                new Layer("Score Split", new PercentLayerHandler()
+                {
+                    Properties = new PercentLayerHandlerProperties()
+                    {
+                        _PercentType = PercentEffectType.Progressive_Gradual,
+                        _Sequence = new KeySequence(Effects.WholeCanvasFreeForm),
+                        _VariablePath = "YourTeam/Goals",
+                        _MaxVariablePath ="Match/TotalGoals",
+                        _PrimaryColor = Color.Transparent,
+                        _SecondaryColor = Color.Transparent
+                    }
+                },
+                new OverrideLogicBuilder()
+                    .SetDynamicDouble("_Value", new IfElseNumeric( new BooleanAnd( new List<Evaluatable<bool>>{//if match is tied 0 - 0
+                                                                                    new BooleanMathsComparison(new NumberGSINumeric("YourTeam/Goals"), new NumberConstant(0)),
+                                                                                    new BooleanMathsComparison(new NumberGSINumeric("OpponentTeam/Goals"), new NumberConstant(0))
+                                                                                }
+                                                                ),
+                                                                new NumberConstant(1),//then set the value to 1, so it is split 50-50
+                                                                new NumberGSINumeric("YourTeam/Goals")//otherwise set to our goals
+                                                )
+                    )
+                    .SetDynamicDouble("_MaxValue", new IfElseNumeric( new BooleanAnd( new List<Evaluatable<bool>>{//if match is tied 0 - 0
+                                                                                    new BooleanMathsComparison(new NumberGSINumeric("YourTeam/Goals"), new NumberConstant(0)),
+                                                                                    new BooleanMathsComparison(new NumberGSINumeric("OpponentTeam/Goals"), new NumberConstant(0))
+                                                                                }
+                                                                ),
+                                                                new NumberConstant(2),//then set the max to 2, so it is split 50-50
+                                                                new NumberGSINumeric("Match/TotalGoals")//otherwise set to total goals
+                                                )
+                    )
+                    .SetDynamicColor("_PrimaryColor", new NumberConstant(1),
+                                                      new NumberGSINumeric("YourTeam/Red"),
+                                                      new NumberGSINumeric("YourTeam/Green"),
+                                                      new NumberGSINumeric("YourTeam/Blue"))
+                    .SetDynamicColor("_SecondaryColor", new NumberConstant(1),
+                                                        new NumberGSINumeric("OpponentTeam/Red"),
+                                                        new NumberGSINumeric("OpponentTeam/Green"),
+                                                        new NumberGSINumeric("OpponentTeam/Blue"))
+                    .SetDynamicBoolean("_Enabled", new BooleanGSINumeric("Game/Status", ComparisonOperator.NEQ, -1))
+                ),
+                new Layer("Background Layer", new SolidFillLayerHandler()
+                {
+                    Properties = new SolidFillLayerHandlerProperties
+                    {
+                        _PrimaryColor = Color.Blue
+                    }
+                }),
             };
-
-            //Effects
-            //// Background
-            bg_enabled = true;
-            bg_ambient_color = Color.LightBlue;
-            bg_use_team_color = true;
-            bg_user_defined_team_colors = false;
-            bg_team_1 = Color.Orange;
-            bg_team_2 = Color.Blue;
-            bg_show_team_score_split = true;
-
-            //// Boost
-            boost_enabled = true;
-            boost_low = Color.Yellow;
-            boost_mid = Color.OrangeRed;
-            boost_high = Color.Red;
-            boost_sequence = new KeySequence(new Devices.DeviceKeys[] {
-                Devices.DeviceKeys.F1, Devices.DeviceKeys.F2, Devices.DeviceKeys.F3, Devices.DeviceKeys.F4, Devices.DeviceKeys.F5,
-                Devices.DeviceKeys.F6, Devices.DeviceKeys.F7, Devices.DeviceKeys.F8, Devices.DeviceKeys.F9, Devices.DeviceKeys.F10,
-                Devices.DeviceKeys.F11, Devices.DeviceKeys.F12
-            });
-            boost_peripheral_use = true;
-
-            //// Speed
-            speed_enabled = true;
-            speed_low = Color.Cyan;
-            speed_mid = Color.Purple;
-            speed_high = Color.Red;
-            speed_sequence = new KeySequence(new Devices.DeviceKeys[] {
-                Devices.DeviceKeys.ONE, Devices.DeviceKeys.TWO, Devices.DeviceKeys.THREE, Devices.DeviceKeys.FOUR, Devices.DeviceKeys.FIVE,
-                Devices.DeviceKeys.SIX, Devices.DeviceKeys.SEVEN, Devices.DeviceKeys.EIGHT, Devices.DeviceKeys.NINE, Devices.DeviceKeys.ZERO,
-                Devices.DeviceKeys.MINUS, Devices.DeviceKeys.EQUALS
-            });
-            speed_peripheral_use = false;
-
-
-            //// Lighting Areas
-            lighting_areas = new List<ColorZone>();
         }
     }
 }

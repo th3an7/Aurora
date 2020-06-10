@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -97,7 +98,7 @@ namespace Aurora.Settings
         }
     }
 
-    public class PluginManagerSettings : Settings
+    public class PluginManagerSettings
     {
         public Dictionary<string, bool> PluginManagement { get; private set; } = new Dictionary<string, bool>();
 
@@ -123,7 +124,7 @@ namespace Aurora.Settings
 
         public PluginManager()
         {
-            SettingsSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Aurora", "PluginSettings.json");
+            SettingsSavePath = Path.Combine(Global.AppDataDirectory, "PluginSettings.json");
             this.CreateDefaults();
         }
 
@@ -144,7 +145,14 @@ namespace Aurora.Settings
         {
             foreach (var plugin in this.Plugins)
             {
-                plugin.Value.ProcessManager(manager);
+                try
+                {
+                    plugin.Value.ProcessManager(manager);
+                }
+                catch(Exception e)
+                {
+                    Global.logger.Error($"Failed to load plugin {plugin.Key}: {e.Message}");
+                }
             }
         }
 
@@ -187,7 +195,7 @@ namespace Aurora.Settings
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(exc.ToString(), Logging_Level.Error, true);
+                    Global.logger.Error(exc.ToString());
                     if (Global.isDebug)
                         throw exc;
                 }

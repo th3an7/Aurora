@@ -2,17 +2,28 @@
 using Aurora.Settings.Layers;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Runtime.Serialization;
 
 namespace Aurora.Profiles.XCOM
 {
     class XCOMProfile : ApplicationProfile
     {
-        //Effects
-        //// Lighting Areas
-        public List<ColorZone> lighting_areas { get; set; }
-
         public XCOMProfile()
         {
+            
+        }
+
+        [OnDeserialized]
+        void OnDeserialized(StreamingContext context)
+        {
+            if (!Layers.Any(lyr => lyr.Handler.GetType().Equals(typeof(Aurora.Settings.Layers.WrapperLightsLayerHandler))))
+                Layers.Add(new Layer("Wrapper Lighting", new Aurora.Settings.Layers.WrapperLightsLayerHandler()));
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
             Layers = new System.Collections.ObjectModel.ObservableCollection<Layer>()
             {
                 new Layer("Camera Movement", new SolidColorLayerHandler()
@@ -31,13 +42,9 @@ namespace Aurora.Profiles.XCOM
                         _PrimaryColor = Color.DarkOrange,
                         _Sequence = new KeySequence(new Devices.DeviceKeys[] { Devices.DeviceKeys.ENTER, Devices.DeviceKeys.ESC, Devices.DeviceKeys.V, Devices.DeviceKeys.X, Devices.DeviceKeys.BACKSPACE, Devices.DeviceKeys.F1, Devices.DeviceKeys.R, Devices.DeviceKeys.B, Devices.DeviceKeys.Y })
                     }
-                }
-                )
+                }),
+                new Layer("Wrapper Lighting", new Aurora.Settings.Layers.WrapperLightsLayerHandler()),
             };
-
-            //Effects
-            //// Lighting Areas
-            lighting_areas = new List<ColorZone>();
         }
     }
 }

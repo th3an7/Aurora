@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Aurora.Settings;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using Aurora.Settings;
+using System.Threading.Tasks;
 
 namespace Aurora.Devices.AtmoOrbDevice
 {
@@ -47,7 +49,7 @@ namespace Aurora.Devices.AtmoOrbDevice
                 }
                 catch (Exception exc)
                 {
-                    Global.logger.LogLine(string.Format("Device {0} encountered an error during Connecting. Exception: {1}", devicename, exc), Logging_Level.External);
+                    Global.logger.Error($"Device {devicename} encountered an error during Connecting. Exception: {exc}");
                     isConnected = false;
 
                     return false;
@@ -116,7 +118,7 @@ namespace Aurora.Devices.AtmoOrbDevice
                 sw.Stop();
         }
 
-        public void Connect()
+        public void Connect(DoWorkEventArgs token = null)
         {
             try
             {
@@ -132,6 +134,7 @@ namespace Aurora.Devices.AtmoOrbDevice
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
                     new MulticastOption(multiCastIp));
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 2);
+
                 socket.Connect(ipClientEndpoint);
 
                 isConnected = true;
@@ -144,43 +147,62 @@ namespace Aurora.Devices.AtmoOrbDevice
             }
         }
 
-        public bool UpdateDevice(DeviceColorComposition colorComposition, bool forced = false)
+        public bool UpdateDevice(DeviceColorComposition colorComposition, DoWorkEventArgs e, bool forced = false)
         {
+            if (e.Cancel) return false;
+
             watch.Restart();
 
             // Connect if needed
             if (!isConnected)
-                Connect();
+                Connect(e);
+
+            if (e.Cancel) return false;
 
             // Reduce sending based on user config
             if (!sw.IsRunning)
                 sw.Start();
 
-            if (sw.ElapsedMilliseconds > Global.Configuration.VarRegistry.GetVariable<int>($"{devicename}_send_delay"))
-            {
-                Color averageColor = Utils.BitmapUtils.GetRegionColor(
-                  colorComposition.keyBitmap,
-                  new BitmapRectangle(0, 0, colorComposition.keyBitmap.Width, colorComposition.keyBitmap.Height)
-                );
+            if (e.Cancel) return false;
 
-                SendColorsToOrb(averageColor.R, averageColor.G, averageColor.B);
+            if (sw.ElapsedMilliseconds >
+                Global.Configuration.VarRegistry.GetVariable<int>($"{devicename}_send_delay"))
+            {
+                Color averageColor;
+                lock (colorComposition.bitmapLock)
+                {
+                    //Fix conflict with debug bitmap
+                    lock (colorComposition.keyBitmap)
+                    {
+
+                        averageColor = Utils.BitmapUtils.GetRegionColor(
+                            (Bitmap)colorComposition.keyBitmap,
+                            new BitmapRectangle(0, 0, colorComposition.keyBitmap.Width,
+                                colorComposition.keyBitmap.Height)
+                        );
+                    }
+                }
+
+                SendColorsToOrb(averageColor.R, averageColor.G, averageColor.B, e);
                 sw.Restart();
             }
+
+            if (e.Cancel) return false;
 
             watch.Stop();
             lastUpdateTime = watch.ElapsedMilliseconds;
 
             return true;
-
         }
 
-        public bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, bool forced = false)
+        public bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, DoWorkEventArgs e, bool forced = false)
         {
             throw new NotImplementedException();
         }
 
-        public void SendColorsToOrb(byte red, byte green, byte blue)
+        public void SendColorsToOrb(byte red, byte green, byte blue, DoWorkEventArgs e = null)
         {
+            if (e?.Cancel ?? false) return;
             if (!isConnected)
             {
                 Reconnect();
@@ -193,13 +215,16 @@ namespace Aurora.Devices.AtmoOrbDevice
                 string orb_ids = Global.Configuration.VarRegistry.GetVariable<string>($"{devicename}_orb_ids") ?? "";
                 orbIDs = orb_ids.Split(',').ToList();
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 orbIDs = new List<string>() { "1" };
             }
 
+            if (e?.Cancel ?? false) return;
+
             foreach (var orbID in orbIDs)
             {
+                if (e?.Cancel ?? false) return;
                 if (String.IsNullOrWhiteSpace(orbID))
                     continue;
 
@@ -230,6 +255,7 @@ namespace Aurora.Devices.AtmoOrbDevice
                     bytes[6] = green;
                     bytes[7] = blue;
 
+                    if (e?.Cancel ?? false) return;
                     socket.Send(bytes, bytes.Length, SocketFlags.None);
                 }
                 catch (Exception)
@@ -245,14 +271,14 @@ namespace Aurora.Devices.AtmoOrbDevice
 
         public VariableRegistry GetRegisteredVariables()
         {
-            if(default_registry == null)
+            if (default_registry == null)
             {
                 default_registry = new VariableRegistry();
                 default_registry.Register($"{devicename}_use_smoothing", true, "Use Smoothing");
                 default_registry.Register($"{devicename}_send_delay", 50, "Send delay (ms)");
                 default_registry.Register($"{devicename}_orb_ids", "1", "Orb IDs", null, null, "For multiple IDs separate with comma");
             }
-            
+
             return default_registry;
         }
     }

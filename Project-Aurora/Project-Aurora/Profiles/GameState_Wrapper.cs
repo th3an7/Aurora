@@ -113,38 +113,19 @@ namespace Aurora.Profiles
         /// <summary>
         /// Creates a default GameState_Wrapper instance.
         /// </summary>
-        public GameState_Wrapper()
-        {
-            json = "{}";
-            _ParsedData = Newtonsoft.Json.Linq.JObject.Parse(json);
-        }
+        public GameState_Wrapper() { }
 
         /// <summary>
         /// Creates a GameState_Wrapper instance based on the passed json data.
         /// </summary>
         /// <param name="json_data">The passed json data</param>
-        public GameState_Wrapper(string json_data) : base(json_data)
-        {
-            if (String.IsNullOrWhiteSpace(json_data))
-                json_data = "{}";
-
-            json = json_data;
-            _ParsedData = JObject.Parse(json_data);
-        }
-
-        /// <summary>
-        /// A copy constructor, creates a GameState_Wrapper instance based on the data from the passed GameState instance.
-        /// </summary>
-        /// <param name="other_state">The passed GameState</param>
-        public GameState_Wrapper(GameState other_state) : base(other_state)
-        {
-        }
+        public GameState_Wrapper(string json_data) : base(json_data) { }
     }
 
     /// <summary>
     /// Class representing provider information for the wrapper
     /// </summary>
-    public class Provider_Wrapper : Node<Provider_Wrapper>
+    public class Provider_Wrapper : Node
     {
         /// <summary>
         /// Name of the program
@@ -167,7 +148,7 @@ namespace Aurora.Profiles
     /// <summary>
     /// Class for additional wrapper command data such as effects and colors
     /// </summary>
-    public class Command_Wrapper : Node<Command_Wrapper>
+    public class Command_Wrapper : Node
     {
         public int red_start;
         public int green_start;
@@ -203,10 +184,25 @@ namespace Aurora.Profiles
     /// <summary>
     /// Class for additional wrapper keys
     /// </summary>
-    public class Extra_Keys_Wrapper : Node<Extra_Keys_Wrapper>
+    public class Extra_Keys_Wrapper : Node
     {
         public Color peripheral;
         public Color logo;
+        public Color mousepad1;
+        public Color mousepad2;
+        public Color mousepad3;
+        public Color mousepad4;
+        public Color mousepad5;
+        public Color mousepad6;
+        public Color mousepad7;
+        public Color mousepad8;
+        public Color mousepad9;
+        public Color mousepad10;
+        public Color mousepad11;
+        public Color mousepad12;
+        public Color mousepad13;
+        public Color mousepad14;
+        public Color mousepad15;
         public Color badge;
         public Color G1;
         public Color G2;
@@ -234,6 +230,21 @@ namespace Aurora.Profiles
         {
             peripheral = Utils.ColorUtils.GetColorFromInt(GetInt("peripheral"));
             logo = Utils.ColorUtils.GetColorFromInt( GetInt("logo"));
+            mousepad1 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad0"));
+            mousepad2 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad1"));
+            mousepad3 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad2"));
+            mousepad4 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad3"));
+            mousepad5 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad4"));
+            mousepad6 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad5"));
+            mousepad7 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad6"));
+            mousepad8 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad7"));
+            mousepad9 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad8"));
+            mousepad10 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad9"));
+            mousepad11 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad10"));
+            mousepad12 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad11"));
+            mousepad13 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad12"));
+            mousepad14 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad13"));
+            mousepad15 = Utils.ColorUtils.GetColorFromInt(GetInt("mousepad14"));
             badge = Utils.ColorUtils.GetColorFromInt( GetInt("badge"));
             G1 = Utils.ColorUtils.GetColorFromInt( GetInt("G1"));
             G2 = Utils.ColorUtils.GetColorFromInt( GetInt("G2"));

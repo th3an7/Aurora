@@ -1,7 +1,9 @@
 ﻿using Aurora.Devices;
+using Aurora.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -21,7 +23,7 @@ namespace Aurora.Settings.Keycaps
     /// </summary>
     public partial class Control_ColorizedKeycap : UserControl, IKeycap
     {
-        private Color current_color = Color.FromArgb(0, 0, 0, 0);
+        private Color? current_color = null;
         private Devices.DeviceKeys associatedKey = DeviceKeys.NONE;
         private bool isImage = false;
 
@@ -56,7 +58,8 @@ namespace Aurora.Settings.Keycaps
             {
                 keyCap.Text = key.visualName;
                 keyCap.Tag = key.tag;
-                keyCap.FontSize = key.font_size.Value;
+                if (key.font_size != null)
+                    keyCap.FontSize = key.font_size.Value;
                 keyCap.Visibility = System.Windows.Visibility.Visible;
             }
             else
@@ -91,7 +94,7 @@ namespace Aurora.Settings.Keycaps
 
         public void SetColor(Color key_color)
         {
-            if (!current_color.Equals(key_color))
+            if (!key_color.Equals(current_color))
             {
                 if (!isImage)
                 {
@@ -123,6 +126,7 @@ namespace Aurora.Settings.Keycaps
                     keyBorder.BorderThickness = new Thickness(0);
                 }
             }
+            UpdateText();
         }
 
         private void keyBorder_MouseDown(object sender, MouseButtonEventArgs e)
@@ -154,6 +158,28 @@ namespace Aurora.Settings.Keycaps
         {
             if (e.LeftButton == MouseButtonState.Pressed && sender is Border)
                 virtualkeyboard_key_selected(associatedKey);
+
+            
+        }
+
+        public void UpdateText()
+        {
+            if (Global.kbLayout.Loaded_Localization.IsAutomaticGeneration())
+            {
+
+                //if (keyCap.Text.Length > 1)
+                //    return;
+
+                StringBuilder sb = new StringBuilder(2);
+                var scan_code = KeyUtils.GetScanCode(associatedKey);
+                if (scan_code == -1)
+                    return;
+                /*var key = KeyUtils.GetFormsKey((KeyboardKeys)associatedKey.LedID);
+                var scan_code = KeyUtils.MapVirtualKeyEx((uint)key, KeyUtils.MapVirtualKeyMapTypes.MapvkVkToVsc, (IntPtr)0x8090809);*/
+
+                int ret = KeyUtils.GetKeyNameTextW((uint)scan_code << 16, sb, 2);
+                keyCap.Text = sb.ToString();
+            }
         }
     }
 }

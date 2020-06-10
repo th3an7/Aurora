@@ -45,8 +45,9 @@ namespace Aurora
     /// <summary>
     /// A logging class
     /// </summary>
-    public class Logger
+    public class Logger : IDisposable
     {
+        public bool DebugLogger = false;
         private bool HasUniqueLogFile = false;
         private bool HasUniqueLogDirectory = false;
         private string LogFile = "log.txt";
@@ -58,6 +59,8 @@ namespace Aurora
 
         public Logger()
         {
+            this.DebugLogger = System.Diagnostics.Debugger.IsAttached || Global.isDebug;
+            
             // Display System information
             StringBuilder systeminfo_sb = new StringBuilder(string.Empty);
             systeminfo_sb.Append("========================================\r\n");
@@ -106,7 +109,7 @@ namespace Aurora
         public string GetPath()
         {
             if (!HasUniqueLogFile)
-                LogFile = System.IO.Path.Combine(GetLogsDirectory(), System.DateTime.Now.ToString("dd_MM_yyyy") + ".log");
+                LogFile = System.IO.Path.Combine(GetLogsDirectory(), System.DateTime.Now.ToString("yyyy_MM_dd") + ".log");
 
             if (!System.IO.File.Exists(LogDirectory))
                 System.IO.Directory.CreateDirectory(LogDirectory);
@@ -160,11 +163,13 @@ namespace Aurora
                             {
                                 string queue_msg = queue.Dequeue();
 
-                                System.Diagnostics.Debug.WriteLine(queue_msg);
+                                if (this.DebugLogger)
+                                    System.Diagnostics.Debug.WriteLine(queue_msg);
                                 LogWriter.WriteLine(queue_msg);
                             }
 
-                            System.Diagnostics.Debug.WriteLine(logLine);
+                            if (this.DebugLogger)
+                                System.Diagnostics.Debug.WriteLine(logLine);
                             LogWriter.WriteLine(logLine);
 
 
@@ -176,7 +181,8 @@ namespace Aurora
                 }
                 catch (Exception e)
                 {
-                    System.Diagnostics.Debug.WriteLine("There was an exception during logging, " + e.Message);
+                    if (this.DebugLogger)
+                        System.Diagnostics.Debug.WriteLine("There was an exception during logging, " + e.Message);
 
                     lock (MessageQueue)
                     {
@@ -209,6 +215,12 @@ namespace Aurora
                 default:
                     return "";
             }
+        }
+
+        public void Dispose()
+        {
+            this.logWriter.Flush();
+            this.logWriter.Dispose();
         }
     }
 }

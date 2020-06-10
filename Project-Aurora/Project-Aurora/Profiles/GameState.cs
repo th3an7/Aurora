@@ -1,252 +1,176 @@
-﻿using Aurora.Profiles;
-using Microsoft.VisualBasic.Devices;
+using Aurora.Utils;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace Aurora.Profiles
 {
-    public class GameStateIgnoreAttribute : Attribute
-    { }
-
-    public class RangeAttribute : Attribute
-    {
-        public int Start { get; set; }
-
-        public int End { get; set; }
-
-        public RangeAttribute(int start, int end)
-        {
-            Start = start;
-            End = end;
-        }
-    }
 
     /// <summary>
     /// A class representing various information retaining to the game.
     /// </summary>
-    public interface IGameState
-    {
-        /// <summary>
-        /// Information about the local system
-        /// </summary>
-        //LocalPCInformation LocalPCInfo { get; }
+    public interface IGameState {
+        JObject _ParsedData { get; }
+        string Json { get; }        
+        string GetNode(string name);
 
-        Newtonsoft.Json.Linq.JObject _ParsedData { get; set; }
-        string json { get; set; }
+        /// <summary>Attempts to resolve the given path into a numeric value. Returns 0 on failure.</summary>
+        double GetNumber(string path);
 
-        String GetNode(string name);
+        /// <summary>Attempts to resolve the given path into a boolean value. Returns false on failure.</summary>
+        bool GetBool(string path);
+
+        /// <summary>Attempts to resolve the given path into a string value. Returns an empty string on failure.</summary>
+        string GetString(string path);
+
+        /// <summary>Attempts to resolve the given path into a enum value. Returns null on failure.</summary>
+        Enum GetEnum(string path);
+
+        /// <summary>Attempts to resolve the given path into a numeric value. Returns default on failure.</summary>
+        TEnum GetEnum<TEnum>(string path) where TEnum : Enum;
     }
 
-    public class GameState<T> : StringProperty<T>, IGameState where T : GameState<T>
+    public class GameState : IGameState
     {
         private static LocalPCInformation _localpcinfo;
 
-        /// <summary>
-        /// Information about the local system
-        /// </summary>
-        public LocalPCInformation LocalPCInfo
-        {
-            get
-            {
-                if (_localpcinfo == null)
-                    _localpcinfo = new LocalPCInformation();
+        // Holds a cache of the child nodes on this gamestate
+        private readonly Dictionary<string, object> childNodes = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-                return _localpcinfo;
-            }
-        }
+        [GameStateIgnore] public JObject _ParsedData { get; }
+        [GameStateIgnore] public string Json { get; }
 
-        public JObject _ParsedData { get; set; }
-        public string json { get; set; }
+        public LocalPCInformation LocalPCInfo => _localpcinfo ?? (_localpcinfo = new LocalPCInformation());
 
         /// <summary>
         /// Creates a default GameState instance.
         /// </summary>
-        public GameState() : base()
-        {
-            json = "{}";
-            _ParsedData = Newtonsoft.Json.Linq.JObject.Parse(json);
+        public GameState() : base() {
+            Json = "{}";
+            _ParsedData = new JObject();
         }
 
         /// <summary>
         /// Creates a GameState instance based on the passed json data.
         /// </summary>
         /// <param name="json_data">The passed json data</param>
-        public GameState(string json_data) : base()
-        {
-            if (String.IsNullOrWhiteSpace(json_data))
+        public GameState(string json_data) : base() {
+            if (string.IsNullOrWhiteSpace(json_data))
                 json_data = "{}";
 
-            json = json_data;
-            _ParsedData = Newtonsoft.Json.Linq.JObject.Parse(json_data);
+            Json = json_data;
+            _ParsedData = JObject.Parse(json_data);
         }
 
         /// <summary>
-        /// A copy constructor, creates a GameState instance based on the data from the passed GameState instance.
+        /// Gets the JSON for a child node in this GameState.
         /// </summary>
-        /// <param name="other_state">The passed GameState</param>
-        public GameState(IGameState other_state) : base()
-        {
-            _ParsedData = other_state._ParsedData;
-            json = other_state.json;
+        public string GetNode(string name) =>
+            _ParsedData.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out var value) ? value.ToString() : "";
+
+        /// <summary>
+        /// Use this method to more-easily lazily return the child node of the given name that exists on this AutoNode.
+        /// </summary>
+        protected TNode NodeFor<TNode>(string name) where TNode : Node
+            => (TNode)(childNodes.TryGetValue(name, out var n) ? n : (childNodes[name] = Instantiator<TNode, string>.Create(_ParsedData[name]?.ToString() ?? "")));
+
+        #region GameState path resolution
+        /// <summary>
+        /// Attempts to resolve the given GameState path into a value.<para/>
+        /// Returns whether or not the path resulted in a field or property (true) or was invalid (false).
+        /// </summary>
+        /// <param name="type">The <see cref="GSIPropertyType"/> that the property must match for this to be valid.</param>
+        /// <param name="value">The current value of the resulting property or field on this instance.</param>
+        private bool TryResolveGSPath(string path, GSIPropertyType type, out object value) {
+            value = null;
+            return !string.IsNullOrEmpty(path)
+                && (value = this.ResolvePropertyPath(path)) != null
+                && GSIPropertyTypeConverter.IsTypePropertyType(value?.GetType(), type);
         }
 
-        public String GetNode(string name)
-        {
-            Newtonsoft.Json.Linq.JToken value;
-
-            if (_ParsedData.TryGetValue(name, out value))
-                return value.ToString();
-            else
-                return "";
+        public double GetNumber(string path) {
+            if (double.TryParse(path, out var val)) // If the path is a raw number, return that
+                return val;
+            if (TryResolveGSPath(path, GSIPropertyType.Number, out var pVal)) // Next, try resolve the path as we would other types
+                return Convert.ToDouble(pVal);
+            return 0;
         }
+
+        public bool GetBool(string path) => TryResolveGSPath(path, GSIPropertyType.Boolean, out var @bool) ? Convert.ToBoolean(@bool) : false;
+        public string GetString(string path) => TryResolveGSPath(path, GSIPropertyType.String, out var str) ? str.ToString() : "";
+        public Enum GetEnum(string path) => TryResolveGSPath(path, GSIPropertyType.Enum, out var @enum) && @enum is Enum e ? e : null;
+        public TEnum GetEnum<TEnum>(string path) where TEnum : Enum => TryResolveGSPath(path, GSIPropertyType.Enum, out var @enum) && @enum is TEnum e ? e : default;
+        #endregion
 
         /// <summary>
         /// Displays the JSON, representative of the GameState data
         /// </summary>
         /// <returns>JSON String</returns>
-        public override string ToString()
-        {
-            return json;
-        }
+        public override string ToString() => Json;
     }
 
-    public class GameState : GameState<GameState>
-    {
-        public GameState() : base() { }
-        public GameState(IGameState gs) : base(gs) { }
-        public GameState(string json) : base(json) { }
+
+    /// <summary>The valid types of GSI property.</summary>
+    public enum GSIPropertyType { None, Number, Boolean, String, Enum }
+
+    internal static class GSIPropertyTypeConverter {
+        /// <summary>
+        /// A set of predicates that determine if the given <see cref="Type"/> is of the given <see cref="GSIPropertyType"/>
+        /// </summary>
+        private static Dictionary<GSIPropertyType, Func<Type, bool>> predicates = new Dictionary<GSIPropertyType, Func<Type, bool>> {
+            [GSIPropertyType.None] = _ => false,
+            [GSIPropertyType.Enum] = type => type.IsEnum, // Needs to take priority over number, since enums are stored as numbers as so IsNumericType would be true
+            [GSIPropertyType.Number] = type => TypeUtils.IsNumericType(type),
+            [GSIPropertyType.Boolean] = type => Type.GetTypeCode(type) == TypeCode.Boolean,
+            [GSIPropertyType.String] = type => Type.GetTypeCode(type) == TypeCode.String
+        };
+
+        /// <summary>
+        /// Gets the <see cref="GSIPropertyType"/> for the given <see cref="Type"/>.
+        /// </summary>
+        public static GSIPropertyType TypeToPropertyType(Type type) {
+            if (type == null) return GSIPropertyType.None;
+            foreach (var (propertyType, predicate) in predicates)
+                if (predicate(type))
+                    return propertyType;
+            return GSIPropertyType.None;
+        }
+
+        /// <summary>
+        /// Determines if the given <see cref="Type"/> is valid for the given <see cref="GSIPropertyType"/>.
+        /// </summary>
+        public static bool IsTypePropertyType(Type type, GSIPropertyType propertyType) => type == null ? false : predicates[propertyType](type);
     }
 
-    static class PerformanceInfo
-    {
-        [DllImport("psapi.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetPerformanceInfo([Out] out PerformanceInformation PerformanceInformation, [In] int Size);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct PerformanceInformation
-        {
-            public int Size;
-            public IntPtr CommitTotal;
-            public IntPtr CommitLimit;
-            public IntPtr CommitPeak;
-            public IntPtr PhysicalTotal;
-            public IntPtr PhysicalAvailable;
-            public IntPtr SystemCache;
-            public IntPtr KernelTotal;
-            public IntPtr KernelPaged;
-            public IntPtr KernelNonPaged;
-            public IntPtr PageSize;
-            public int HandlesCount;
-            public int ProcessCount;
-            public int ThreadCount;
-        }
-
-        public static Int64 GetPhysicalAvailableMemoryInMiB()
-        {
-            ulong availableMemory = new ComputerInfo().AvailablePhysicalMemory;
-            return Convert.ToInt64(availableMemory / 1048576);
-        }
-
-        public static Int64 GetTotalMemoryInMiB()
-        {
-            ulong availableMemory = new ComputerInfo().TotalPhysicalMemory;
-            return Convert.ToInt64(availableMemory / 1048576);
-
-        }
-    }
 
     /// <summary>
-    /// Class representing local computer information
+    /// An empty gamestate with no child nodes.
     /// </summary>
-    public class LocalPCInformation : Node<LocalPCInformation>
+    public class EmptyGameState : GameState
     {
-        /// <summary>
-        /// The current hour
-        /// </summary>
-        public int CurrentHour { get { return Utils.Time.GetHours(); } }
+        public EmptyGameState() : base() { }
+        public EmptyGameState(string json) : base(json) { }
+    }
 
-        /// <summary>
-        /// The current minute
-        /// </summary>
-        public int CurrentMinute { get { return Utils.Time.GetMinutes(); } }
 
-        /// <summary>
-        /// The current second
-        /// </summary>
-        public int CurrentSecond { get { return Utils.Time.GetSeconds(); } }
+    /// <summary>
+    /// Attribute that can be applied to properties to indicate they should be excluded from the game state.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public class GameStateIgnoreAttribute : Attribute { }
 
-        /// <summary>
-        /// The current millisecond
-        /// </summary>
-        public int CurrentMillisecond { get { return Utils.Time.GetMilliSeconds(); } }
+    /// <summary>
+    /// Attribute that indicates the range of indicies that are valid for an enumerable game state property.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public class RangeAttribute : Attribute {
 
-        /// <summary>
-        /// Used RAM
-        /// </summary>
-        public long MemoryUsed { get { return PerformanceInfo.GetTotalMemoryInMiB() - PerformanceInfo.GetPhysicalAvailableMemoryInMiB(); } }
-
-        /// <summary>
-        /// Available RAM
-        /// </summary>
-        public long MemoryFree { get { return PerformanceInfo.GetPhysicalAvailableMemoryInMiB(); } }
-
-        /// <summary>
-        /// Total RAM
-        /// </summary>
-        public long MemoryTotal { get { return PerformanceInfo.GetTotalMemoryInMiB(); } }
-
-        private static PerformanceCounter _CPUCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-
-        private static float _CPUUsage = 0.0f;
-        private static float _SmoothCPUUsage = 0.0f;
-
-        private static System.Timers.Timer cpuCounterTimer;
-
-        /// <summary>
-        /// Current CPU Usage
-        /// </summary>
-        public float CPUUsage
-        {
-            get
-            {
-                //Global.logger.LogLine($"_CPUUsage = {_CPUUsage}\t\t_SmoothCPUUsage = {_SmoothCPUUsage}");
-
-                if (_SmoothCPUUsage < _CPUUsage)
-                    _SmoothCPUUsage += (_CPUUsage - _SmoothCPUUsage) / 10.0f;
-                else if (_SmoothCPUUsage > _CPUUsage)
-                    _SmoothCPUUsage -= (_SmoothCPUUsage - _CPUUsage) / 10.0f;
-
-                return _SmoothCPUUsage;
-            }
+        public RangeAttribute(int start, int end) {
+            Start = start;
+            End = end;
         }
 
-        internal LocalPCInformation() : base()
-        {
-            if (cpuCounterTimer == null)
-            {
-                cpuCounterTimer = new System.Timers.Timer(1000);
-                cpuCounterTimer.Elapsed += CpuCounterTimer_Elapsed;
-                cpuCounterTimer.Start();
-            }
-        }
-
-        private void CpuCounterTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            try
-            {
-                _CPUUsage = (_CPUUsage + _CPUCounter.NextValue()) / 2.0f;
-            }
-            catch (Exception exc)
-            {
-                Global.logger.LogLine("PerformanceCounter exception: " + exc, Logging_Level.Error);
-            }
-        }
+        public int Start { get; set; }
+        public int End { get; set; }
     }
 }

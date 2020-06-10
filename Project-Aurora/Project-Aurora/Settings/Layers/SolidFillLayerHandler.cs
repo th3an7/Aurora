@@ -29,13 +29,9 @@ namespace Aurora.Settings.Layers
         }
     }
 
+    [Overrides.LogicOverrideIgnoreProperty("_Sequence")]
     public class SolidFillLayerHandler : LayerHandler<SolidFillLayerHandlerProperties>
     {
-        public SolidFillLayerHandler()
-        {
-            _ID = "SolidFilled";
-        }
-
         protected override UserControl CreateControl()
         {
             return new Control_SolidFillLayer(this);

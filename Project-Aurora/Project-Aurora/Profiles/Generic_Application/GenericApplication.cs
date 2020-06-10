@@ -1,4 +1,5 @@
 ﻿using Aurora.Settings;
+using Aurora.Settings.Layers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -13,44 +14,56 @@ namespace Aurora.Profiles.Generic_Application
 {
     public class GenericApplication : Application
     {
-        public GenericApplication(string process_name)
-            : base(new LightEventConfig { Name="Generic Application", ID=process_name, ProcessNames= new[] { process_name }, ProfileType= typeof(GenericApplicationProfile), OverviewControlType= typeof(Control_GenericApplication), GameStateType= typeof(GameState), Event= new Event_GenericApplication() })
+        public override ImageSource Icon
         {
+            get
+            {
+                if (icon == null)
+                {
+                    string icon_path = Path.Combine(GetProfileFolderPath(), "icon.png");
+
+                    if (File.Exists(icon_path))
+                    {
+                        var memStream = new MemoryStream(File.ReadAllBytes(icon_path));
+                        BitmapImage b = new BitmapImage();
+                        b.BeginInit();
+                        b.StreamSource = memStream;
+                        b.EndInit();
+
+                        icon = b;
+                    }
+                    else
+                        icon = new BitmapImage(new Uri(@"Resources/unknown_app_icon.png", UriKind.Relative));
+                }
+
+                return icon;
+            }
+        }
+
+        public GenericApplication(string process_name) : base(new LightEventConfig {
+            Name = "Generic Application",
+            ID = process_name,
+            ProcessNames = new[] { process_name },
+            SettingsType = typeof(GenericApplicationSettings),
+            ProfileType = typeof(GenericApplicationProfile),
+            OverviewControlType = typeof(Control_GenericApplication),
+            GameStateType = typeof(GameState_Wrapper),
+            Event = new Event_GenericApplication()
+        })
+        {
+            AllowLayer<WrapperLightsLayerHandler>();
         }
 
         public override string GetProfileFolderPath()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Aurora", "AdditionalProfiles", Config.ID);
-        }
-
-        public override ImageSource GetIcon()
-        {
-            if (icon == null)
-            {
-                string icon_path = Path.Combine(GetProfileFolderPath(), "icon.png");
-
-                if (System.IO.File.Exists(icon_path))
-                {
-                    var memStream = new System.IO.MemoryStream(System.IO.File.ReadAllBytes(icon_path));
-                    BitmapImage b = new BitmapImage();
-                    b.BeginInit();
-                    b.StreamSource = memStream;
-                    b.EndInit();
-
-                    icon = b;
-                }
-                else
-                    icon = new BitmapImage(new Uri(@"Resources/unknown_app_icon.png", UriKind.Relative));
-            }
-
-            return icon;
+            return Path.Combine(Global.AppDataDirectory, "AdditionalProfiles", Config.ID);
         }
 
         protected override ApplicationProfile CreateNewProfile(string profileName)
         {
-            ApplicationProfile profile = (ApplicationProfile)Activator.CreateInstance(Config.ProfileType, Path.GetFileNameWithoutExtension(Config.ID));
+            ApplicationProfile profile = (ApplicationProfile)Activator.CreateInstance(Config.ProfileType);
             profile.ProfileName = profileName;
-            profile.ProfileFilepath = Path.Combine(GetProfileFolderPath(), GetValidFilename(profile.ProfileName) + ".json");
+            profile.ProfileFilepath = Path.Combine(GetProfileFolderPath(), GetUnusedFilename(GetProfileFolderPath(), profile.ProfileName) + ".json");
             return profile;
         }
     }

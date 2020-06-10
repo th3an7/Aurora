@@ -1,4 +1,5 @@
 ﻿using Aurora.Devices;
+using Aurora.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,7 +57,8 @@ namespace Aurora.Settings.Keycaps
             {
                 keyCap.Text = key.visualName;
                 keyCap.Tag = key.tag;
-                keyCap.FontSize = key.font_size.Value;
+                if (key.font_size != null)
+                    keyCap.FontSize = key.font_size.Value;
                 keyCap.Visibility = System.Windows.Visibility.Visible;
             }
             else
@@ -95,7 +97,10 @@ namespace Aurora.Settings.Keycaps
             {
                 if (!isImage)
                 {
-                    keyCap.Foreground = new SolidColorBrush(key_color);
+                    if (string.IsNullOrWhiteSpace(keyCap.Text))
+                        keyBorder.BorderBrush = new SolidColorBrush(key_color);
+                    else
+                        keyCap.Foreground = new SolidColorBrush(key_color);
                 }
                 else
                 {
@@ -112,7 +117,12 @@ namespace Aurora.Settings.Keycaps
                 if (keyBorder.IsEnabled)
                 {
                     if (!isImage)
-                        keyBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)255, (byte)30, (byte)30, (byte)30));
+                    {
+                        if (string.IsNullOrWhiteSpace(keyCap.Text))
+                            keyBorder.Background = new SolidColorBrush(Utils.ColorUtils.MultiplyColorByScalar(key_color, 0.6));
+                        else
+                            keyBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)255, (byte)30, (byte)30, (byte)30));
+                    }
                     else
                         keyBorder.Background = new SolidColorBrush(key_color);
                 }
@@ -122,6 +132,7 @@ namespace Aurora.Settings.Keycaps
                     keyBorder.BorderThickness = new Thickness(0);
                 }
             }
+            UpdateText();
         }
 
         private void keyBorder_MouseDown(object sender, MouseButtonEventArgs e)
@@ -166,6 +177,26 @@ namespace Aurora.Settings.Keycaps
         {
             if (e.LeftButton == MouseButtonState.Pressed && sender is Border)
                 virtualkeyboard_key_selected(associatedKey);
+        }
+
+        public void UpdateText()
+        {
+            if (Global.kbLayout.Loaded_Localization.IsAutomaticGeneration())
+            {
+
+                //if (keyCap.Text.Length > 1)
+                //    return;
+
+                StringBuilder sb = new StringBuilder(2);
+                var scan_code = KeyUtils.GetScanCode(associatedKey);
+                if (scan_code == -1)
+                    return;
+                /*var key = KeyUtils.GetFormsKey((KeyboardKeys)associatedKey.LedID);
+                var scan_code = KeyUtils.MapVirtualKeyEx((uint)key, KeyUtils.MapVirtualKeyMapTypes.MapvkVkToVsc, (IntPtr)0x8090809);*/
+
+                int ret = KeyUtils.GetKeyNameTextW((uint)scan_code << 16, sb, 2);
+                keyCap.Text = sb.ToString();
+            }
         }
     }
 }

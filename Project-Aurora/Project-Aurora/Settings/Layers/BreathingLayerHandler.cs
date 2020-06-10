@@ -23,6 +23,7 @@ namespace Aurora.Settings.Layers
         [JsonIgnore]
         public bool RandomSecondaryColor { get { return Logic._RandomSecondaryColor ?? _RandomSecondaryColor ?? false; } }
 
+        [Overrides.LogicOverridable("Effect Speed")]
         public float? _EffectSpeed { get; set; }
 
         [JsonIgnore]
@@ -47,11 +48,6 @@ namespace Aurora.Settings.Layers
 
         private Color current_primary_color = Color.Transparent;
         private Color current_secondary_color = Color.Transparent;
-
-        public BreathingLayerHandler()
-        {
-            _ID = "Breathing";
-        }
 
         protected override UserControl CreateControl()
         {

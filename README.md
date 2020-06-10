@@ -3,267 +3,103 @@
 
 [Link to Aurora's webpage, includes some demos and changelogs](http://project-aurora.com/)
 
-[![Latest Version](https://img.shields.io/github/release/antonpup/aurora.svg)](https://github.com/antonpup/Aurora/releases/latest) [![Total Downloads](https://img.shields.io/github/downloads/antonpup/aurora/total.svg)](https://github.com/antonpup/Aurora/releases/latest) [![Build status](https://ci.appveyor.com/api/projects/status/jh44k7r5ewelxiss?svg=true)](https://ci.appveyor.com/project/antonpup/aurora) ![Build status](https://img.shields.io/badge/language-C%23-178600.svg)
-
-
+[![All Contributors](https://img.shields.io/badge/all_contributors-17-orange.svg?style=flat-square)](#contributors-) [![Latest Version](https://img.shields.io/github/release/antonpup/aurora.svg)](https://github.com/antonpup/Aurora/releases/latest) [![Total Downloads](https://img.shields.io/github/downloads/antonpup/aurora/total.svg)](https://github.com/antonpup/Aurora/releases/latest) [![Build status](https://ci.appveyor.com/api/projects/status/jh44k7r5ewelxiss/branch/dev?svg=true)](https://ci.appveyor.com/project/antonpup/aurora/branch/dev) ![Build status](https://img.shields.io/badge/language-C%23-178600.svg)
 
 Project Aurora is a utility that unifies RGB lighting devices across different brands and enables them to work alongside each other, all while adding and improving RGB lighting support for various games that previous had none or little RGB lighting support. Aurora is mainly written in C#, but has C++ components to implement native support for other games.
 
-## Minor Announcement
-I ([@Antonpup](https://github.com/antonpup)) will no longer be able to develop this project further due to my new future job. I have handed over the project development to [@Simon W](https://github.com/simon-wh). He has access to everything in order to push new updates and upkeep the project. I will keep this project on my Github account, as it is part of my portfolio. I hope you enjoy the work Simon will be putting into this project. Some of you will see my work again in the near future.
+Have a look at our [website](https://www.project-aurora.com/) for a better look at Aurora and its features!
 
-# Requirements
-Recommended:
-* OS: Windows based operating system
-* Processor: Quad core processor
-* Memory: 255 MB RAM
-* Software : Make sure to have installed [Visual C++ Redistributable Packages for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) and [Microsoft .NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653)
-* Internet Connection: Required for automatic updates
-* Additional Notes: Being able to run games with stable performance
+You can find the list of **Supported Games and Devices** [here](https://github.com/antonpup/Aurora/wiki/Supported-Games-&-Devices)
 
-# How to Install
-1. First of all, make sure that your PC meets the requirements listed above. Also, make sure that you have [Visual C++ Redistributable Packages for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) and [Microsoft .NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653) installed.
-2. Download the latest release from [here](https://github.com/antonpup/Aurora/releases/latest).
+## Download
+
+[Latest stable release](https://github.com/antonpup/Aurora/releases/latest)
+
+[Most recent release (potentially unstable)](https://github.com/antonpup/Aurora/releases)
+
+[Bleeding-edge builds (decent chance they're going to have issues)](https://ci.appveyor.com/project/antonpup/aurora/branch/dev/artifacts)
+
+## Discord Server
+
+Having issues? Want to discuss changes or talk about possible features? Want to be involved in the development and design process of Aurora? Join our [Discord server](https://discord.gg/YAuBmg9) and get involved!
+
+## How to Install
+
+### AUTOMATIC
+
+1. Download the 'Aurora-setup-vX.X.X.exe' from any of the options found under the Download section, every recent release should have this available
+2. Run the executable and install it, all requirements should be installed for you.
+3. Start using Aurora!
+
+### MANUAL
+
+1. First of all, make sure that your PC meets the requirements listed above. Also, make sure that you have [Visual C++ Redistributable Packages for Visual Studio 2017](https://support.microsoft.com/en-gb/help/2977003/the-latest-supported-visual-c-downloads) and [Microsoft .NET Framework 4.6.1](https://www.microsoft.com/en-gb/download/details.aspx?id=49981) installed.
+2. Download the latest release from above
 3. Extract the archive anywhere on your computer. Preferably keep it in a location you can easily access.
 4. Run "Aurora.exe", from that point, Aurora should provide you with further instructions and options.
 
-## Run this program in the background at windows start
-You can set Aurora to run on Windows Startup. Go into Settings and check "Start with Windows".
-![Aurora Settings](https://puu.sh/tfKss/22603982e9.png)
+## Contributors ✨
 
-## Natively Supported Games
-* Dota 2
-* CS:GO
-* Grand Theft Auto V
-* Rocket League
-* Overwatch
-* Payday 2
-* The Division
-* League of Legends
-* Hotline Miami
-* The Talos Principle
-* Battlefield 3
-* Blacklight: Retribution
-* Magic: The Gathering - Duels of the Planeswalkers 2012
-* Middle-earth: Shadow of Mordor
-* Serious Sam 3
-* Robot Roller-Derby Disco Dodgeball
-* XCOM: Enemy Unknown
-* Evolve Stage 2
-* Metro: Last Light
-* Guild Wars 2
-* Worms W.M.D
-* Blade and Soul
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
-## Natively Supported Devices
-* Logitech
-* Corsair
-* Razer
-* Clevo
-* Cooler Master
-* AtmoOrb
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/antonpup"><img src="https://avatars2.githubusercontent.com/u/3421963?v=4" width="100px;" alt=""/><br /><sub><b>Anton Pupkov</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=antonpup" title="Code">💻</a> <a href="#question-antonpup" title="Answering Questions">💬</a> <a href="https://github.com/antonpup/Aurora/commits?author=antonpup" title="Documentation">📖</a> <a href="#design-antonpup" title="Design">🎨</a> <a href="#infra-antonpup" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/antonpup/Aurora/pulls?q=is%3Apr+reviewed-by%3Aantonpup" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/simon-wh"><img src="https://avatars3.githubusercontent.com/u/10797576?v=4" width="100px;" alt=""/><br /><sub><b>Simon W</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=simon-wh" title="Code">💻</a> <a href="#question-simon-wh" title="Answering Questions">💬</a> <a href="https://github.com/antonpup/Aurora/commits?author=simon-wh" title="Documentation">📖</a> <a href="#infra-simon-wh" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/antonpup/Aurora/pulls?q=is%3Apr+reviewed-by%3Asimon-wh" title="Reviewed Pull Requests">👀</a> <a href="#projectManagement-simon-wh" title="Project Management">📆</a> <a href="#maintenance-simon-wh" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://github.com/Wibble199"><img src="https://avatars0.githubusercontent.com/u/3984322?v=4" width="100px;" alt=""/><br /><sub><b>Will Bennion</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=Wibble199" title="Code">💻</a> <a href="#question-Wibble199" title="Answering Questions">💬</a> <a href="https://github.com/antonpup/Aurora/commits?author=Wibble199" title="Documentation">📖</a> <a href="#maintenance-Wibble199" title="Maintenance">🚧</a> <a href="https://github.com/antonpup/Aurora/pulls?q=is%3Apr+reviewed-by%3AWibble199" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/diogotr7"><img src="https://avatars2.githubusercontent.com/u/29486064?v=4" width="100px;" alt=""/><br /><sub><b>Diogo Trindade</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=diogotr7" title="Code">💻</a> <a href="#question-diogotr7" title="Answering Questions">💬</a> <a href="#maintenance-diogotr7" title="Maintenance">🚧</a> <a href="#projectManagement-diogotr7" title="Project Management">📆</a> <a href="https://github.com/antonpup/Aurora/pulls?q=is%3Apr+reviewed-by%3Adiogotr7" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/antonpup/Aurora/commits?author=diogotr7" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/Gurjot95"><img src="https://avatars1.githubusercontent.com/u/20298837?v=4" width="100px;" alt=""/><br /><sub><b>Gurjot</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=Gurjot95" title="Code">💻</a> <a href="#question-Gurjot95" title="Answering Questions">💬</a> <a href="#maintenance-Gurjot95" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://github.com/gitmacer"><img src="https://avatars3.githubusercontent.com/u/37345589?v=4" width="100px;" alt=""/><br /><sub><b>Tim Oberle</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=gitmacer" title="Code">💻</a> <a href="#question-gitmacer" title="Answering Questions">💬</a> <a href="https://github.com/antonpup/Aurora/issues?q=author%3Agitmacer" title="Bug reports">🐛</a></td>
+    <td align="center"><a href="https://github.com/SnakePin"><img src="https://avatars1.githubusercontent.com/u/18491360?v=4" width="100px;" alt=""/><br /><sub><b>SnakePin</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=SnakePin" title="Code">💻</a> <a href="#question-SnakePin" title="Answering Questions">💬</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/MoshiMoshi0"><img src="https://avatars2.githubusercontent.com/u/902882?v=4" width="100px;" alt=""/><br /><sub><b>MoshiMoshi0</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=MoshiMoshi0" title="Code">💻</a> <a href="#question-MoshiMoshi0" title="Answering Questions">💬</a></td>
+    <td align="center"><a href="http://rajko.info"><img src="https://avatars3.githubusercontent.com/u/205276?v=4" width="100px;" alt=""/><br /><sub><b>Rajko Stojadinovic</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=rajkosto" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/DogeAmazed"><img src="https://avatars0.githubusercontent.com/u/2185647?v=4" width="100px;" alt=""/><br /><sub><b>DogeAmazed</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=DogeAmazed" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/VoronFX"><img src="https://avatars3.githubusercontent.com/u/7604250?v=4" width="100px;" alt=""/><br /><sub><b>Igor Voronin</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=VoronFX" title="Code">💻</a> <a href="#ideas-VoronFX" title="Ideas, Planning, & Feedback">🤔</a></td>
+    <td align="center"><a href="https://lokalise.com"><img src="https://avatars1.githubusercontent.com/u/1381419?v=4" width="100px;" alt=""/><br /><sub><b>Arturs Ziborovs</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=DrParanoia" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/srodriguez1850"><img src="https://avatars3.githubusercontent.com/u/9145577?v=4" width="100px;" alt=""/><br /><sub><b>Sebastian Rodriguez</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=srodriguez1850" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/JoeyBallentine"><img src="https://avatars0.githubusercontent.com/u/34788790?v=4" width="100px;" alt=""/><br /><sub><b>Joey Ballentine</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=JoeyBallentine" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/meng0609"><img src="https://avatars2.githubusercontent.com/u/15703207?v=4" width="100px;" alt=""/><br /><sub><b>孟晓宁</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=meng0609" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/th3an7"><img src="https://avatars3.githubusercontent.com/u/13398380?v=4" width="100px;" alt=""/><br /><sub><b>Łukasz Ordon</b></sub></a><br /><a href="#question-th3an7" title="Answering Questions">💬</a></td>
+    <td align="center"><a href="https://github.com/Popat0"><img src="https://avatars1.githubusercontent.com/u/712015?v=4" width="100px;" alt=""/><br /><sub><b>Popat0</b></sub></a><br /><a href="#question-Popat0" title="Answering Questions">💬</a></td>
+    <td align="center"><a href="https://github.com/Fluto"><img src="https://avatars3.githubusercontent.com/u/7686594?v=4" width="100px;" alt=""/><br /><sub><b>Fluto</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=Fluto" title="Code">💻</a></td>
+    <td align="center"><a href="http://stuntguy3000.com"><img src="https://avatars1.githubusercontent.com/u/1522389?v=4" width="100px;" alt=""/><br /><sub><b>Luke Anderson</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=stuntguy3000" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/thingamajig0"><img src="https://avatars1.githubusercontent.com/u/31176843?v=4" width="100px;" alt=""/><br /><sub><b>thingamajig0</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=thingamajig0" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/rushdie99"><img src="https://avatars3.githubusercontent.com/u/9208301?v=4" width="100px;" alt=""/><br /><sub><b>polinyeh</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=rushdie99" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/xQwexx"><img src="https://avatars3.githubusercontent.com/u/17799600?v=4" width="100px;" alt=""/><br /><sub><b>Qwex</b></sub></a><br /><a href="https://github.com/antonpup/Aurora/commits?author=xQwexx" title="Code">💻</a></td>
+  </tr>
+</table>
 
-## Planned Features/Support
-* SteelSeries devices
-* LightFX devices
-* LightPack
-* Hearthstone
-* Installer
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## Video demonstrations
-Dota 2 Demo
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
-[![Dota 2 Demo](http://img.youtube.com/vi/iqwYU-blkhk/0.jpg)](https://www.youtube.com/watch?v=iqwYU-blkhk)
+### Contribute
 
-Rocket League Demo
+If you're a developer or just a software user you can help the project by:
 
-[![Rocket League Demo](http://img.youtube.com/vi/XhXQt0LU520/0.jpg)](https://www.youtube.com/watch?v=XhXQt0LU520)
-
-Grand Theft Auto V Demo
-
-[![Grand Theft Auto V Demo](http://img.youtube.com/vi/irBmmA_ndPY/0.jpg)](https://www.youtube.com/watch?v=irBmmA_ndPY)
-
-Robot Roller-Derby Disco Dodgeball Demo
-
-[![Robot Roller-Derby Disco Dodgeball Demo](http://img.youtube.com/vi/pxx3hqoPFD8/0.jpg)](https://www.youtube.com/watch?v=pxx3hqoPFD8)
-
-
-## Screenshots
-![Desktop Settings](https://puu.sh/tfKzm/1ce3b0cd5c.png)
-![Dota 2 Settings](https://puu.sh/tfKNj/98229d2f69.png)
-![CSGO Settings](https://puu.sh/tfKRK/61f3bb3757.png)
-![GTA 5 Settings](https://puu.sh/tfKWL/d72e10b288.png)
-![Rocket League Settings](https://puu.sh/tfL4N/30f5b9cfea.png)
-![Payday 2 Settings](https://puu.sh/tfLcn/4978a48199.png)
-![Skype Integration Settings](https://puu.sh/tfLfu/57b1df348a.png)
-
-
-## In-depth features
-General
-
-* Support for per-key Logitech devices
-* Support for Razer Chroma devices
-* Support for per-key Corsair devices
-* Support for Cooler Master devices
-* Support for Clevo devices
-* Support for AtmoOrb
-* Support for popular online games: Dota 2, CS:GO, GTA 5, Rocket League, and Overwatch
-* Display volume percentage on the keyboard
-* Display CPU and Memory usage on the keyboard
-* Layering system for effects
-* Define custom layers with individual effects
-* Key selection via freeform region
-* Customizable “away from keyboard” effects
-* Set global peripheral brightness on the fly without having to leave your game
-* Completely turn off peripheral lights after a specific time
-* Interactive keyboard effects such as: Key Fade, Key Wave, and Arrow Flow
-* Preview lighting effects without having to launch the game
-* Simultaneous support for different brands of RGB peripheral devices
-* Support for a wide range of models from all the top brands of RGB peripherals
-* Support for almost any Logitech LED and Razer Chroma supported games
-* Add other programs to define custom lighting layers for daytime and nighttime themes
-* Display shortcut keys with Shortcuts Assistant
-* Automatic updater
-* Ability to select your preferred keyboard layout and brand
-* Ability to select your mouse, and it's orientation (left/right handed)
-* Import/Export for profile settings
-* Customizable gradient layers
-* Scripting support for custom lighting effects & custom devices
-
-Dota 2 features
-
-* Team-based background lighting
-* Respawn effect
-* Killstreak effect
-* Health and Mana indicators
-* Ability and Item indicators
-* Hero ability effects
-* Layering system
-* Rearrange and add general layers
-
-CS:GO features
-
-* Team-based background lighting
-* Health and Ammo indicators
-* Bomb effect
-* Kill indicators
-* Burning and Flashbang effects
-* Chat/Console typing keys
-* Layering system
-* Rearrange and add general layers
-
-Grand Theft Auto V features
-
-* Dynamic background lighting (based on current character or race position)
-* Custom police siren effects
-* Layering system
-* Rearrange and add general layers
-
-Rocket League features
-
-* Team-based background lighting
-* Score-split for background effect
-* Boost indicator
-* Layering system
-* Rearrange and add general layers
-
-Overwatch features
-
-* Overwatch effects are controlled by the game itself
-* Layering system
-* Rearrange and add general layers
-
-Payday 2 features
-
-* Assault-based background lighting effects
-* Suspicion background effect
-* Player health and ammo indicators
-* Layering system
-* Rearrange and add general layers
-
-The Division features
-
-* The Division effects are controlled by the game itself
-* Layering system
-* Rearrange and add general layers
-
-League of Legends features
-
-* League of Legends reacts to player HP, when damaged, healed, or killed.
-* Layering system
-* Rearrange and add general layers
-
-Hotline Miami features
-
-* Hotline Miami has a slowly alternating color effect.
-* Layering system
-* Rearrange and add general layers
-
-The Talos Principle features
-
-* The Talos Principle changes color based on the puzzle color you are in.
-* Layering system
-* Rearrange and add general layers
+* [Opening an issue](https://github.com/antonpup/Aurora/issues) to report any bugs you experience (please see if an issue already exists before opening an issue)
+* Trying to find where the problem lies with a particular issue (regardless of your skill level, information is always helpful)
+* Fixing issues, if you spot an [issue](https://github.com/antonpup/Aurora/issues) you think you can fix, please make a fork and submit a pull request that solves the issue. Any contributions are welcome!
+  * Right now we don't have a very fixed code styling due to the amount of inconsistency in the project. At some point I'm going to go through and make it all consistent, but it'll probably be CamelCase or a slight variation of it that'll be used.
 
 
 
-# F.A.Q.
-* Q: Can this give me a ban in a video game?
+## Credits
 
-   A: Support for all included games is tested to be sure not to trigger any anti-cheats or produce any suspicious behavior. With that said, the software is to be used at your own risk. We cannot prevent game developers from adding anti-cheats or blocking ways Aurora retrieves information from the game.
-
-* Q: Are you going to support more devices?
-
-   A: Yes, we are going to support anything that has an SDK.
-
-* Q: Are you going to support more games?
-
-   A: Yes, we will be looking into requested games. You can suggest/request game support  [here](https://github.com/antonpup/Aurora/issues).
-
-* Q: Are you open to doing collaborations with other RGB projects or game companies?
-
-   A: Definitely! If you have a project that you think can fit Aurora, feel free to send me an e-mail, iamnotaspy[at]lastbullet.net.
-
-* Q: I would like to request support for a game, how do I do that?
-
-   A: You can make suggestions by posting an issue [here](https://github.com/antonpup/Aurora/issues), outlining what you would like to request, and I will look over it.
-   
-* Q: Some keys in the program state that they are not supported. What does this mean?
-
-   A: It means that changes to those keys are not currently possible. When it's possible to change those keys via SDK, then their support will be added.
-   
-* Q: Aurora is constantly crashing! Help!
-
-   A: You can report crashes and other issues on [Github](https://github.com/antonpup/Aurora/issues). Please include a brief explanation of how to reproduce the crash and include the most recent log file. Log files can be located in the "*Aurora Location*/logs" directory.
-   
-* Q: I have found a bug. How do I report it?
-
-   A: You can report bugs here, by creating a new Issue [here](https://github.com/antonpup/Aurora/issues).
-
-* Q: I wish to expand this, fix bugs, and add my own features.
-
-   A: Feel free to fork this repo and make pull requests with your own code. I am open for suggestions for both features and optimization. :)
-
-* Q: What is the purpose of this utility?
-
-   A: The main goal of Aurora is to allow RGB peripheral devices to work alongside other RGB peripheral devices from other brands. Meaning, if you own a combination of Logitech, Razer, or Corsair peripheral devices, they should be able to work together.
-
-   Secondary goal of Aurora is to integrate RGB lighting into popular games. RGB lighting is a nifty feature that is often underused, and as a result gamers with RGB gear are unable to utilize the lighting effects that they paid for.
-   
-# Donations
-If you want to help this project rapidly grow, you can donate via PayPal to help me further develop Aurora. While being a university student, Aurora does not take my monetary priority. Games and RGB hardware are not cheap, and as a result, support for not owned products will take more time to develop. The donations will be used to purchase hardware and video games with intent to add support for them with Aurora. Alternatively you can gift games directly to me via Steam.
-
-I do not have any intent in charging money for Aurora, it will always be a free and open source project. 
-
-| PayPal | Steam |
-| ------ | ----- |
-| [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=pupant%40gmail%2ecom&lc=US&item_name=Aurora%20Development&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted) | [![](http://steamsignature.com/status/english/76561198025451421.png)](http://steamcommunity.com/id/pupant/) |
-
-
-# Credit
 * [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) - Used for JSON parsing
 * [Colore](https://github.com/CoraleStudios/Colore) - Used for Razer suppport
-* [CUE.NET](https://github.com/DarthAffe/CUE.NET) - Used for Corsair support
+* [RGB.NET](https://github.com/DarthAffe/RGB.NET) - Used for Corsair support
 * [Xceed.Wpf.Toolkit](http://wpftoolkit.codeplex.com/) - Used for Color Picker and Integer Up Down controls
 * [MouseKeyHook](https://github.com/gmamaladze/globalmousekeyhook) - Used or interactive effects
 * [NAudio](https://github.com/naudio/NAudio) - Used for Volume Control
@@ -271,29 +107,9 @@ I do not have any intent in charging money for Aurora, it will always be a free 
 * [Infragistics.Themes.MetroDark.Wpf](http://www.infragistics.com/community/blogs/blagunas/archive/2013/05/25/free-metro-light-and-dark-themes-for-wpf-and-silverlight-microsoft-controls.aspx) - Used as a base theme
 * [Elysium](https://elysium.codeplex.com/) - Used parts of this theme
 * [LogiLed2Corsair](https://github.com/VRocker/LogiLed2Corsair) - Used as a resource for Wrappers
-* [GSI for Payday 2](https://github.com/Last-Bullet-Development/PD2GSI) - A GSI mod for Payday 2
+* [GSI for Payday 2](https://github.com/simon-wh/PAYDAY-2-GSI) - A GSI mod for Payday 2
 * [LightFX Extender](https://github.com/Archomeda/lightfx-extender) - A LightFX wrapped by a friend of mine, used as a resource for LightFX Wrapper.
 * [ColorBox](http://colorbox.codeplex.com/) - Used for gradient editor/picker. This repo contains a modified version of ColorBox, to suit Aurora's needs a bit more.
-
-
-# Special thanks to the testing team:
-* Casper
-* dirty_thomas
-* Dustmuffins
-* eMJay
-* FarmeZZ
-* Firewall
-* LASTBULLET_ZEROALIAS
-* KensonN
-* Melantrix
-* Mice
-* NurisH
-* Podgy
-* Raushen
-* Steven-O-kun
-* System Overlord
-* Tatsuto
-* ThirdEyeOpen
-* Trickster79
-* twitch.tv/fearsc | Faceit.com
-* Warblade
+* [SharpDX](http://sharpdx.org/) - Used for Raw Input for nonblocking input reading for key binds and interactive effects
+* [HidLibrary](https://github.com/mikeobrien/HidLibrary) - Used for communication with HID devices
+* [NZXTSharp](https://github.com/akmadian/NZXTSharp) - NZXT SDK, Used for NZXT support

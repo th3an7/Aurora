@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aurora.Devices
 {
@@ -1054,6 +1056,252 @@ namespace Aurora.Devices
         Profile_Key6 = 168,
 
         /// <summary>
+        /// Numpad 00
+        /// </summary>
+        [Description("Numpad 00")]
+        NUM_ZEROZERO = 169,
+
+        /// <summary>
+        /// Macrokey 0 key
+        /// </summary>
+        [Description("G0")]
+        G0 = 170,
+
+        /// <summary>
+        /// Macrokey 0 key
+        /// </summary>
+        [Description("Left FN")]
+        LEFT_FN = 171,
+
+        /// <summary>
+        /// Additional Light 11
+        /// </summary>
+        [Description("Additional Light 11")]
+        ADDITIONALLIGHT11 = 172,
+
+        /// <summary>
+        /// Additional Light 12
+        /// </summary>
+        [Description("Additional Light 12")]
+        ADDITIONALLIGHT12 = 173,
+
+        /// <summary>
+        /// Additional Light 13
+        /// </summary>
+        [Description("Additional Light 13")]
+        ADDITIONALLIGHT13 = 174,
+
+        /// <summary>
+        /// Additional Light 14
+        /// </summary>
+        [Description("Additional Light 14")]
+        ADDITIONALLIGHT14 = 175,
+
+        /// <summary>
+        /// Additional Light 15
+        /// </summary>
+        [Description("Additional Light 15")]
+        ADDITIONALLIGHT15 = 176,
+
+        /// <summary>
+        /// Additional Light 16
+        /// </summary>
+        [Description("Additional Light 16")]
+        ADDITIONALLIGHT16 = 177,
+
+        /// <summary>
+        /// Additional Light 17
+        /// </summary>
+        [Description("Additional Light 17")]
+        ADDITIONALLIGHT17 = 178,
+
+        /// <summary>
+        /// Additional Light 18
+        /// </summary>
+        [Description("Additional Light 18")]
+        ADDITIONALLIGHT18 = 179,
+
+        /// <summary>
+        /// Additional Light 19
+        /// </summary>
+        [Description("Additional Light 19")]
+        ADDITIONALLIGHT19 = 180,
+
+        /// <summary>
+        /// Additional Light 20
+        /// </summary>
+        [Description("Additional Light 20")]
+        ADDITIONALLIGHT20 = 181,
+
+        /// <summary>
+        /// Additional Light 21
+        /// </summary>
+        [Description("Additional Light 21")]
+        ADDITIONALLIGHT21 = 182,
+
+        /// <summary>
+        /// Additional Light 22
+        /// </summary>
+        [Description("Additional Light 22")]
+        ADDITIONALLIGHT22 = 183,
+
+        /// <summary>
+        /// Additional Light 23
+        /// </summary>
+        [Description("Additional Light 23")]
+        ADDITIONALLIGHT23 = 184,
+
+        /// <summary>
+        /// Additional Light 24
+        /// </summary>
+        [Description("Additional Light 24")]
+        ADDITIONALLIGHT24 = 185,
+
+        /// <summary>
+        /// Additional Light 25
+        /// </summary>
+        [Description("Additional Light 25")]
+        ADDITIONALLIGHT25 = 186,
+
+        /// <summary>
+        /// Additional Light 26
+        /// </summary>
+        [Description("Additional Light 26")]
+        ADDITIONALLIGHT26 = 187,
+
+        /// <summary>
+        /// Additional Light 27
+        /// </summary>
+        [Description("Additional Light 27")]
+        ADDITIONALLIGHT27 = 188,
+        
+        /// <summary>
+        /// Additional Light 28
+        /// </summary>
+        [Description("Additional Light 28")]
+        ADDITIONALLIGHT28 = 189,
+
+        /// <summary>
+        /// Additional Light 29
+        /// </summary>
+        [Description("Additional Light 29")]
+        ADDITIONALLIGHT29 = 190,
+
+        /// <summary>
+        /// Additional Light 30
+        /// </summary>
+        [Description("Additional Light 30")]
+        ADDITIONALLIGHT30 = 191,
+
+        /// <summary>
+        /// Additional Light 31
+        /// </summary>
+        [Description("Additional Light 31")]
+        ADDITIONALLIGHT31 = 192,
+
+        /// <summary>
+        /// Additional Light 32
+        /// </summary>
+        [Description("Additional Light 32")]
+        ADDITIONALLIGHT32 = 193,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 1")]
+        MOUSEPADLIGHT1 = 201,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 2")]
+        MOUSEPADLIGHT2 = 202,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 3")]
+        MOUSEPADLIGHT3 = 203,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 4")]
+        MOUSEPADLIGHT4 = 204,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 5")]
+        MOUSEPADLIGHT5 = 205,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 6")]
+        MOUSEPADLIGHT6 = 206,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 7")]
+        MOUSEPADLIGHT7 = 207,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 8")]
+        MOUSEPADLIGHT8 = 208,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 9")]
+        MOUSEPADLIGHT9 = 209,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 10")]
+        MOUSEPADLIGHT10 = 210,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 11")]
+        MOUSEPADLIGHT11 = 211,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 12")]
+        MOUSEPADLIGHT12 = 212,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 13")]
+        MOUSEPADLIGHT13 = 213,
+
+        /// <summary>
+        /// Mousepad Light 1
+        /// </summary>
+        [Description("Mousepad Light 14")]
+        MOUSEPADLIGHT14 = 214,
+
+        /// <summary>
+        /// Mousepad Light 2
+        /// </summary>
+        [Description("Mousepad Light 15")]
+        MOUSEPADLIGHT15 = 215,
+
+        ///<summary>
+        /// Calculator Key
+        /// </summary>
+        [Description("Calculator")]
+        CALC = 216,
+
+        /// <summary>
         /// None
         /// </summary>
         [Description("None")]
@@ -1063,8 +1311,9 @@ namespace Aurora.Devices
     /// <summary>
     /// Struct representing color settings being sent to devices
     /// </summary>
-    public struct DeviceColorComposition
+    public class DeviceColorComposition
     {
+        public readonly object bitmapLock = new object();
         public Dictionary<DeviceKeys, Color> keyColors;
         public Bitmap keyBitmap;
     }
@@ -1150,7 +1399,7 @@ namespace Aurora.Devices
         /// <param name="keyColors">A dictionary of DeviceKeys their corresponding Colors</param>
         /// <param name="forced">A boolean value indicating whether or not to forcefully update this device</param>
         /// <returns></returns>
-        bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, bool forced = false);
+        bool UpdateDevice(Dictionary<DeviceKeys, Color> keyColors, DoWorkEventArgs e, bool forced = false);
 
         /// <summary>
         /// Updates the device with a specified color composition.
@@ -1158,6 +1407,6 @@ namespace Aurora.Devices
         /// <param name="colorComposition">A struct containing a dictionary of colors as well as the resulting bitmap</param>
         /// <param name="forced">A boolean value indicating whether or not to forcefully update this device</param>
         /// <returns></returns>
-        bool UpdateDevice(DeviceColorComposition colorComposition, bool forced = false);
+        bool UpdateDevice(DeviceColorComposition colorComposition, DoWorkEventArgs e, bool forced = false);
     }
 }

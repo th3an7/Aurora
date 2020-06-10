@@ -40,6 +40,7 @@ local.properties
 *.suo
 *.user
 *.sln.docstates
+/.vs
 
 # Build results
 
@@ -228,6 +229,7 @@ Project-Aurora/Project-Aurora.VC.opendb
 Project-Aurora/Project-Aurora.VC.db
 Web Installer/output/*
 Project-Aurora/.vs/*
+Project-Aurora/.idea/*
 
 # NuGet Packages
 *.nupkg
@@ -239,3 +241,7 @@ Project-Aurora/.vs/*
 #!**/packages/repositories.config
 # NuGet v3's project.json files produces more ignoreable files
 *.nuget.props
+
+Project-Aurora/Project-Aurora/Resources/Win64/
+
+Project-Aurora/Project-Aurora/Resources/Win32/
